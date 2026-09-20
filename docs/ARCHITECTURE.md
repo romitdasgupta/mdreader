@@ -16,19 +16,19 @@ succeeds. GTK 4 and libadwaita are installed, but the corresponding WebKit 6
 namespace is absent. GTK 3 avoids replacing the installed rendering stack.
 A graphical GNOME session is available for real application smoke tests.
 
-## Module boundary and ownership
+## Module boundaries
 
-| Owner | Files | Responsibility |
+| Area | Files | Responsibility |
 | --- | --- | --- |
-| Core coder | `folio/document.py`, `folio/resources/reader.css` | Read Markdown, produce a complete safe HTML document, heading outline and statistics |
-| Native UI coder | `folio/app.py`, `folio/window.py`, `folio/settings.py`, `folio/__main__.py` | GTK application lifecycle, native controls, rendering view, search, reload, preferences |
-| Integrator | `folio/__init__.py`, `pyproject.toml`, `bin/folio`, desktop/icon assets, README and examples | Installation, launchers, packaging, end-to-end assembly |
-| Testers | `tests/` | Core behavior, hostile inputs, native UI smoke and regression tests |
+| Renderer | `folio/document.py`, `folio/resources/reader.css` | Read Markdown, produce a complete safe HTML document, heading outline and statistics |
+| Native UI | `folio/app.py`, `folio/window.py`, `folio/settings.py`, `folio/__main__.py` | GTK application lifecycle, native controls, rendering view, search, reload, preferences |
+| Distribution | `folio/__init__.py`, `pyproject.toml`, `bin/folio`, desktop/icon assets, README and examples | Installation, launchers, packaging, end-to-end assembly |
+| Verification | `tests/`, `scripts/smoke_gui.py` | Core behavior, hostile inputs, native UI smoke and regression tests |
 
 The core never imports `gi`; core tests run without a graphical display. The UI
 depends on the core's public types and functions, and does not parse Markdown.
-The initial core coder may add `tests/test_document.py`; coordinate before a
-tester edits the same file.
+These are code boundaries, not reserved ownership. Coordinate write access for
+the current task when agents work in parallel.
 
 ## Exact core API
 

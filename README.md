@@ -64,6 +64,10 @@ Local Markdown links open in Folio. Web and email links open in the desktop's de
 
 ## Development
 
+Agents and contributors should start with [AGENTS.md](AGENTS.md) for the module
+map, development boundaries, and checks appropriate to a change. [AGENT.md](AGENT.md)
+is an alternate entry point to the same guide.
+
 ```sh
 source .venv/bin/activate            # After the development setup above
 python3 -m pytest -q                 # Core and regression tests
@@ -72,6 +76,64 @@ python3 -m build --no-isolation      # Wheel and source archive in dist/
 ```
 
 The document parser is independent of GTK. The UI consumes a rendered document, outline, and statistics from that module. See [architecture](docs/ARCHITECTURE.md), [product decisions](docs/PRODUCT.md), [acceptance criteria](docs/ACCEPTANCE.md), and [release verification](docs/RELEASE.md).
+
+If `python3 -m build` reports a missing module (including `build.__main__`), use
+the development venv after installing `.[dev]`; the system Python can have GTK
+without the Python build frontend. For example, run
+`make PYTHON=.venv/bin/python build`. Install distro prerequisites as needed;
+this workspace's dependencies are not a guarantee about a fresh machine.
+
+### Package verification
+
+A source-tree run cannot verify wheel contents. Install the built wheel in a fresh
+environment and check it outside the checkout. `scripts/smoke_gui.py` inserts the
+source checkout into Python's path, so using an installed interpreter to run that
+script still tests the source. The following recipe verifies the installed package.
+
+Run from the repository root after the development setup above. It builds into a
+temporary directory, checks the wheel, then removes the temporary environment:
+
+```sh
+.venv/bin/python - <<'PY'
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+
+with tempfile.TemporaryDirectory(prefix="folio-package-") as directory:
+    check = Path(directory)
+    subprocess.run([sys.executable, "-m", "build", "--no-isolation",
+                    "--outdir", str(check / "dist")], check=True)
+    subprocess.run(["/usr/bin/python3", "-m", "venv", "--system-site-packages",
+                    str(check / "env")], check=True)
+    python = str(check / "env/bin/python")
+    wheel = next((check / "dist").glob("*.whl"))
+    subprocess.run([python, "-m", "pip", "install", str(wheel)], check=True)
+    probe = """
+import sys
+from pathlib import Path
+from importlib.resources import files
+import folio
+from folio.document import render_markdown
+assert Path(folio.__file__).resolve().is_relative_to(Path(sys.prefix).resolve())
+for name in ('reader.css', 'gtk.css'):
+    assert files('folio').joinpath('resources', name).read_text().strip()
+assert render_markdown('# Installed').title == 'Installed'
+print('Installed package, resources and renderer verified outside the checkout.')
+"""
+    environment = {key: value for key, value in os.environ.items() if key != "PYTHONPATH"}
+    subprocess.run([python, "-I", "-c", probe], cwd=check, env=environment, check=True)
+    subprocess.run([str(check / "env/bin/folio"), "--version"],
+                   cwd=check, env=environment, check=True)
+PY
+```
+
+This is a headless package check, not proof of a native launch. For native changes,
+also open a sample with the installed launcher on a display before removing that
+environment, using temporary absolute `XDG_CONFIG_HOME` and `XDG_CACHE_HOME` paths.
+Test `scripts/install_local.py` with `--prefix` pointing to a temporary directory;
+check the generated launcher from another working directory and exercise uninstall.
 
 Built by the requested team roles: two coders, two testers, two PMs, a Steve Jobs-inspired product perspective, and a Linus Torvalds-inspired architecture perspective. These are assigned agent roles, not endorsements by those people.
 

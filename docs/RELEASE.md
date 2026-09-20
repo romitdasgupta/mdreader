@@ -47,8 +47,9 @@ and implementation decisions in [PRODUCT.md](PRODUCT.md) and
 
 ## Release verification matrix
 
-Evidence recorded on **2026-09-19** against the initial working tree; no commit
-exists yet. The test environment is Ubuntu 26.04 with GNOME, Python 3.14.4,
+Historical evidence recorded on **2026-09-19** against the initial working tree,
+subsequently committed as `464dac1`. These results do not verify later changes.
+The test environment was Ubuntu 26.04 with GNOME, Python 3.14.4,
 GTK 3.24.52 and WebKitGTK 2.52.6 using the WebKit2 4.1 API. Results below are
 reported by the core tester, GUI tester, native UI coder and integrator. The
 GUI runner passed 14 groups; its evidence is in `artifacts/gui-smoke.json` and
