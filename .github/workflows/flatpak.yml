@@ -14,10 +14,20 @@ jobs:
   bundle:
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-50
+      image: ubuntu:26.04
       options: --privileged
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install build and desktop test environment
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            flatpak flatpak-builder python3 ca-certificates dbus-x11 \
+            dbus-system-bus-common xvfb xauth fonts-dejavu-core \
+            appstream desktop-file-utils
+          mkdir -p /run/dbus
+          dbus-daemon --system --fork
+          flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
       - name: Read version
         id: version
         run: |
