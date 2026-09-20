@@ -81,6 +81,24 @@ This trial passed its guidance criteria. It validates instruction use and honest
 handling of unavailable evidence, not GUI behavior. Actual graphical and consumer
 package results are documented separately in [RELEASE.md](RELEASE.md).
 
+## Wayland compatibility follow-up
+
+The release follow-up used the same evidence-first workflow for a reported
+installed-app failure. With the 0.1.0 Flatpak and a real Wayland display,
+
+```sh
+timeout 15s flatpak run io.github.romitdasgupta.mdreader /path/to/document.md
+```
+
+returned **1** after printing `Error 71 (Protocol error) dispatching to Wayland
+display`. The same command stayed open through the timeout when launched with
+`WEBKIT_DISABLE_DMABUF_RENDERER=1`. The published 0.1.1 manifest carries that
+setting, a focused manifest test protects it, and the exact installed 0.1.1
+bundle passed the command without an override. This records the reproducible
+trigger, the compatibility tradeoff and the installed-package evidence so a
+future agent does not mistake the symptom for a Flatpak home-directory permission
+failure.
+
 ## Initial guidance evaluation (historical)
 
 The results below describe the initial guidance revision, not the current release's
