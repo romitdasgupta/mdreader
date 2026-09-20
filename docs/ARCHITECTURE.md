@@ -1,184 +1,115 @@
-# Folio architecture
+# Architecture
 
-Decision: use Python 3.11+, PyGObject, GTK 3, WebKitGTK 4.1, and
-markdown-it-py. Folio is a native GTK desktop application with a WebKit document
-surface. There is no application server, Electron runtime, or JavaScript build.
-
-This decision follows the requested Linus Torvalds-inspired architecture review:
-choose a small implementation with an explicit boundary and dependencies that
-actually run on the target machine. It does not claim endorsement by him.
-
-## Environment evidence
-
-The project machine has Python 3.14.4, PyGObject, GTK 3, WebKit2 4.1,
-markdown-it-py, and pytest. Importing GTK 3 and WebKit2 4.1 in a fresh process
-succeeds. GTK 4 and libadwaita are installed, but the corresponding WebKit 6
-namespace is absent. GTK 3 avoids replacing the installed rendering stack.
-A graphical GNOME session is available for real application smoke tests.
+Folio uses Python 3.11+, PyGObject, GTK 3, WebKitGTK 4.1 and markdown-it-py.
+GTK provides the desktop controls; WebKit renders an inert HTML document produced
+by the Markdown parser. The application runs locally without an application server.
 
 ## Module boundaries
 
 | Area | Files | Responsibility |
 | --- | --- | --- |
-| Renderer | `folio/document.py`, `folio/resources/reader.css` | Read Markdown, produce a complete safe HTML document, heading outline and statistics |
-| Native UI | `folio/app.py`, `folio/window.py`, `folio/settings.py`, `folio/__main__.py` | GTK application lifecycle, native controls, rendering view, search, reload, preferences |
-| Distribution | `folio/__init__.py`, `pyproject.toml`, `bin/folio`, desktop/icon assets, README and examples | Installation, launchers, packaging, end-to-end assembly |
-| Verification | `tests/`, `scripts/smoke_gui.py` | Core behavior, hostile inputs, native UI smoke and regression tests |
+| Document | `folio/document.py`, `folio/resources/reader.css` | File loading, Markdown parsing, safe HTML, headings and statistics |
+| Window | `folio/window.py`, `folio/resources/gtk.css` | Native controls, rendering, navigation, search and reload |
+| Lifecycle | `folio/app.py`, `folio/__main__.py` | Command line and GTK application lifecycle |
+| Preferences | `folio/settings.py` | Validated settings, XDG paths and atomic persistence |
+| Distribution | `pyproject.toml`, `packaging/flatpak/`, `data/`, `scripts/` | Python package, Flatpak, desktop metadata and installation |
+| Verification | `tests/`, `scripts/smoke_gui.py`, `scripts/verify_package.py` | Core contracts and installed application checks |
 
-The core never imports `gi`; core tests run without a graphical display. The UI
-depends on the core's public types and functions, and does not parse Markdown.
-These are code boundaries, not reserved ownership. Coordinate write access for
-the current task when agents work in parallel.
+`document.py` and `settings.py` run without `gi` or a display. The window consumes
+the renderer's result and does not implement another Markdown parser. GTK widgets
+and their callbacks belong on the GTK thread.
 
-## Exact core API
+## Document contract
 
 ```python
-from dataclasses import dataclass
-from pathlib import Path
-
-class DocumentError(Exception):
-    """A user-presentable failure to read or prepare a document."""
-
-@dataclass(frozen=True)
-class Heading:
-    level: int
-    title: str
-    anchor: str
-
-@dataclass(frozen=True)
-class RenderedDocument:
-    title: str
-    html: str
-    headings: tuple[Heading, ...]
-    word_count: int
-    reading_minutes: int
-    path: Path | None
-    source_text: str
-
-def render_markdown(
-    source: str,
-    *,
-    source_path: Path | None = None,
-    theme: str = "light",
-) -> RenderedDocument: ...
-
-def load_document(
-    path: str | Path,
-    *,
-    theme: str = "light",
-) -> RenderedDocument: ...
+def render_markdown(source: str, *, source_path: Path | None = None,
+                    theme: str = "light") -> RenderedDocument: ...
+def load_document(path: str | Path, *, theme: str = "light") -> RenderedDocument: ...
 ```
 
-`theme` accepts `light` and `dark`. `load_document` resolves the source path,
-accepts UTF-8 including a BOM, rejects input above 10 MiB, and turns missing,
-unreadable, non-file and decode failures into `DocumentError`. It does not mutate
-the source file. The title is the first level-one heading, then the filename
-stem, then `Untitled`. Outline titles are plain text. Anchor IDs are deterministic,
-unique and prefixed with `heading-`; repeated headings receive numeric suffixes.
+`RenderedDocument` is an immutable value containing `title`, complete `html`,
+`headings`, `word_count`, `reading_minutes`, resolved `path` and `source_text`.
+Each immutable `Heading` contains its `level`, plain-text `title` and `anchor`.
+Themes are `light` and `dark`.
 
-`html` contains a complete document, embedded packaged stylesheet and the chosen
-theme. Core supports CommonMark-style Markdown with raw HTML disabled, fenced
-code, tables and strikethrough. Word count reflects readable text. Estimated
-reading time is zero for an empty document, otherwise at least one minute at
-roughly 220 words per minute. These metadata values must not require a browser.
+`load_document` accepts UTF-8, including a BOM, up to 10 MiB. Missing, unreadable,
+non-file and invalid UTF-8 inputs raise `DocumentError`. Reading and reloading
+never modify the source. The title comes from the first level-one heading, then
+the filename stem, then `Untitled`.
 
-## Rendering and resource policy
+Heading IDs are deterministic, unique and prefixed with `heading-`. A global set
+and per-base suffix counters handle repeated headings and literal numeric suffix
+collisions without repeatedly scanning from the first suffix. Reading statistics
+are computed without a browser, with an estimate of 220 words per minute and zero
+minutes for empty input.
 
-Markdown is input data. Explicitly configure `html=False`; markdown-it-py's
-CommonMark preset otherwise permits raw HTML. Heading anchors and attribute
-values are escaped. Do not introduce plugins that emit arbitrary HTML.
+## Content isolation
 
-Links retain same-document fragments, relative local paths, HTTP, HTTPS and
-mailto destinations. Reject other explicit schemes. When embedding supported
-local images, resolve against the document parent, require the resolved target
-to remain inside that directory tree, cap individual asset sizes, and emit data
-URIs. Missing, blocked and unsupported images should have readable fallback text.
-Remote images are not fetched automatically. Raster PNG/JPEG/GIF/WebP support is
-required; SVG support is optional and must not introduce executable markup.
+Markdown and linked files are untrusted input. Raw HTML is escaped, attributes
+are escaped, and the generated page has a restrictive content security policy.
+Supported Markdown includes fenced code, tables, task lists and strikethrough.
 
-Use a content security policy allowing only the inline packaged styles and
-embedded image data needed by the reader. Document HTML contains no scripts,
-iframes or remote styles/fonts. The UI may evaluate small trusted scripts for
-anchor navigation, theme application and scroll restoration; never interpolate
-Markdown text into JavaScript. Serialize strings with JSON when needed.
+Local PNG, JPEG, GIF and WebP images are recognized by their bytes, restricted to
+the document's resolved directory tree and embedded as data URIs. Limits are
+5 MiB per image and 20 MiB of image bytes per document. Unsupported, missing or
+blocked images produce readable fallback text. Remote images, SVG and image data
+URIs supplied by Markdown are not loaded.
 
-Use WebKit's navigation policy to keep fragment navigation in the reader, open
-local Markdown links through `load_document`, and dispatch explicit HTTP/HTTPS/
-mailto clicks to the desktop URI handler. Block unrelated navigation and popup
-windows. Handle URL decoding and fragments before constructing filesystem paths.
-Do not launch arbitrary executable files or arbitrary URI schemes.
+WebKit permits trusted `evaluate_javascript` calls for navigation and scroll
+restoration. JavaScript markup is separately disabled, and CSP blocks document
+scripts. Keep these controls separate: disabling all JavaScript also breaks
+trusted application operations. Never interpolate document text into executable
+JavaScript; serialize values where needed.
 
-WebKit `load_html` resolves relative resources against its base URI and restricts
-absolute file resources outside that base. Embedded images remove this coupling.
-Set the base URI to the document directory URI with a trailing slash when a path
-exists. The UI must not accidentally navigate the rendering surface to a website.
+Navigation checks keep heading fragments in the reader and open supported local
+Markdown/text links through the document loader. Explicit HTTP, HTTPS and mailto
+clicks use the desktop handler. Other schemes, popups and unrelated navigation
+are blocked. Opening a document never fetches remote resources. The HTML base URI
+is the document directory with a trailing slash; embedded images avoid dependence
+on WebKit's file-resource access.
 
-## Native application behavior
+## Native behavior and state
 
-Use `Gtk.Application` with one primary reader window and `HANDLES_OPEN` so desktop
-file associations and command-line paths work. GTK owns the header bar, open
-chooser, heading sidebar, find controls, menus and status line. WebKit owns only
-document layout, selection and scrolling. Use the WebKit find controller for
-document search, including next/previous navigation and a clear no-results state.
+`Gtk.Application` uses `HANDLES_OPEN` and one reader window. Its application ID,
+desktop entry and icon use `io.github.romitdasgupta.mdreader`. GTK provides the
+outline, controls, chooser and status line. WebKit provides document layout,
+selection, scrolling and the find controller.
 
-Opening a document prepares the new value before replacing the visible document.
-Failures show a native, nonfatal message and preserve the current page. Empty
-documents render an intentional empty state. Theme and text zoom affect both
-native controls and the document consistently where applicable.
+The open action uses `Gtk.FileChooserDialog` to retain the original file path.
+A portal's individual-file export can hide sibling images and linked documents,
+and interfere with directory monitoring. The GTK chooser works with the Flatpak's
+read-only filesystem access while preserving those document relationships.
 
-Monitor the active document with Gio, debounce bursty editor saves, and replace
-the monitor when switching documents. Preserve the current scroll position or
-reading fraction after reload where possible. Atomic-save replacements must
-continue to be observed; monitoring the parent directory is an acceptable simple
-approach. Disconnect monitors and remove timeout sources when destroying a
-window. A failed reload leaves the last successfully rendered content visible.
+Opening or reloading prepares a replacement before discarding the current page.
+Failures leave the last readable page visible and show a nonfatal error. Gio
+monitors the document's parent directory so atomic saves remain observable;
+events are debounced for 400 milliseconds. Reload preserves reading position and
+focus where feasible. Closing the window disconnects monitors and removes timers.
 
-Persist small preferences and recent paths under `$XDG_CONFIG_HOME/folio/`,
-falling back to `~/.config/folio/`. Invalid settings fall back to defaults.
-Use atomic JSON replacement, tolerate unavailable config directories, and never
-make preference persistence a prerequisite for reading a document.
+Preferences store theme, size, outline visibility, zoom and the last directory in
+`$XDG_CONFIG_HOME/folio/settings.json`, falling back to `~/.config/folio/settings.json`.
+Invalid values use defaults. Writes use atomic replacement, and save failures do
+not prevent reading. Flatpak supplies an application-private XDG configuration
+directory, separate from source installations.
 
 ## Distribution and verification
 
-The consumer Flatpak uses GNOME Platform 50 to supply Python, PyGObject and the
-native GTK/WebKit libraries; the manifest pins the bundled Python dependencies.
-See [distribution](DISTRIBUTION.md) for its read-only filesystem contract, build,
-installed-runtime verification and publication. Source installations use system
-packages for the native dependencies.
-Python packaging declares markdown-it-py and includes `reader.css` as package
-data. Document distro prerequisites and source launch instructions. Do not claim
-that `pip install` supplies the entire system desktop stack.
+The consumer package is a Flatpak using GNOME Platform 50 for Python, PyGObject,
+GTK 3 and WebKitGTK 4.1. The manifest bundles hash-pinned markdown-it-py and mdurl;
+the SDK and setuptools are build dependencies. Read-only host filesystem access
+supports sibling resources and directory monitoring. The sandbox has no network
+permission and retains Flatpak's reserved-path restrictions.
 
-Test pure rendering with pytest, exercising duplicate/Unicode headings, code,
-tables, malformed text, size and decoding errors, local assets and unsafe URLs.
-Test the GTK window on the available display, including open, search, theme,
-outline, monitor reload and close. A screenshot provides visual QA; imported
-modules alone do not verify the application. Test the installed wheel separately
-so missing styles and resource-path assumptions are caught.
+Python wheels include the application and its CSS, and declare markdown-it-py as
+a dependency. Source and wheel installations obtain native libraries from system
+packages. A Python package installation alone does not supply the desktop stack.
 
-## Upstream references
+Core tests exercise renderer, settings and installer contracts. GUI smoke checks
+exercise a real GTK/WebKit window, including chooser paths, images, search,
+navigation, reload and source preservation. Installed-package checks run outside
+the checkout and reject source imports; Flatpak checks run against the Platform
+runtime. Screenshots support visual review. An unavailable display is a blocked
+check, not a pass.
 
-- [WebKitGTK 4.1 `load_html`](https://webkitgtk.org/reference/webkit2gtk/stable/method.WebView.load_html.html)
-- [WebKitGTK find controller](https://webkitgtk.org/reference/webkit2gtk/stable/method.WebView.get_find_controller.html)
-- [markdown-it-py security defaults](https://markdown-it-py.readthedocs.io/en/latest/security.html)
-
-## Implementation review
-
-Reviewed the implemented renderer, native window/application, settings and local
-installation scripts. The implementation preserves the intended core/UI boundary,
-uses the installed native toolkit, prevents document scripts and automatic remote
-resource loading, constrains embedded images, and handles preferences independently
-of source documents. The integrator additionally verified a built wheel by opening
-the sample in the installed reader outside the source checkout.
-
-One performance defect found during review was fixed: duplicate heading IDs
-previously restarted their suffix search for every heading. The final implementation
-keeps a per-base suffix counter and a global collision set. An independent repeat
-of the benchmark rendered 8,000 identical headings in 0.080 seconds, down from
-2.345 seconds; all IDs remained unique, including collisions with headings whose
-titles already contain numeric suffixes. Core test validation reported 74 passing
-tests after this change.
-
-Architecture review approved with no remaining identified correctness, security,
-or performance blockers. Native interaction testing and visual acceptance remain
-separate release checks.
+See [development setup](../README.md#development-and-contributing),
+[distribution](DISTRIBUTION.md) and [release verification](RELEASE.md) for commands.

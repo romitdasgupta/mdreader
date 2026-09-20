@@ -35,7 +35,7 @@ and evidence, not a standing committee or mandatory planning paperwork.
 | Window, outline, search, reload, keyboard, native themes | `folio/window.py`, `folio/resources/gtk.css`, `scripts/smoke_gui.py` |
 | CLI and desktop application lifecycle | `folio/app.py`, `folio/__main__.py`, `bin/folio` |
 | Preferences and XDG paths | `folio/settings.py`, `tests/test_settings.py` |
-| Distribution and local install | `pyproject.toml`, `MANIFEST.in`, `scripts/install_local.py`, `data/` |
+| Distribution and local install | `packaging/flatpak/`, `scripts/build_flatpak.sh`, `scripts/verify_package.py`, `pyproject.toml`, `MANIFEST.in`, `scripts/install_local.py`, `data/`, `docs/DISTRIBUTION.md` |
 
 ## Preserve these boundaries
 
@@ -56,6 +56,12 @@ and evidence, not a standing committee or mandatory planning paperwork.
   numeric suffixes. Repeated headings must not reintroduce quadratic work.
 - GTK widgets belong on the GTK thread. Monitored reloads must survive atomic
   saves, preserve reading position where feasible, and clean up on window close.
+- The consumer package is a Flatpak using GNOME Platform 50. Keep its read-only
+  host-file access and lack of network permission. Python dependencies belong in
+  `/app`; the build SDK must not mask dependencies absent from the Platform.
+- The GTK file chooser must retain the document's original directory. A portal's
+  individual-file alias can hide adjacent images and links and break reload.
+  Verify the selected path and nearby image before any direct test reopen.
 - Tests use temporary documents, XDG directories and install prefixes. Do not
   change the user's desktop defaults, real preferences or `~/.local` to test a fix.
 
@@ -70,7 +76,8 @@ not see distro GTK. Use the development venv for the build frontend.
 | --- | --- |
 | Renderer or preferences | Add a focused regression when behavior changes; run it and `python3 -m pytest -q`. |
 | GTK, rendering CSS, navigation or reload | Run `python3 scripts/smoke_gui.py`; for appearance changes inspect fresh light/dark/narrow screenshots under `artifacts/`. |
-| Packaging, resources, entry points or installer | Build with the development interpreter; follow [package verification](README.md#package-verification) outside the checkout. Use a disposable installer prefix. |
+| Python packaging, resources or local installer | Run the [package verifier](README.md#package-verification) with the development interpreter; it verifies an installation outside the checkout. Use a disposable installer prefix. |
+| Flatpak manifest, dependencies, desktop identity or release workflow | Follow [distribution verification](docs/DISTRIBUTION.md): build the bundle, install with dependency resolution in a disposable environment, run `scripts/smoke_gui.py --installed` on the Platform runtime, and check exported desktop launching. |
 | Docs or agent guidance | Check referenced paths and commands; exercise changed instructions with a fresh task. See [guidance trials](docs/AGENT_TRIALS.md). Do not add tests that merely match prose or CSS strings. |
 
 For a bug, first demonstrate the failure through observable behavior. Then fix it
@@ -84,6 +91,11 @@ display, run headless checks, record the exact GUI blocker, and leave GUI behavi
 unverified. If already available, `xvfb-run -a python3 scripts/smoke_gui.py` is an
 alternative. An import test or `folio --version` does not prove the UI works.
 Old test counts, screenshots and release approvals are historical evidence only.
+The default smoke runner imports the checkout; using it with an installed Python
+does not establish installed-package correctness. Use its `--installed` mode or
+`scripts/verify_package.py --gui`, and check the reported package path. When
+changing CI, inspect the actual hosted job result; a local run alone is not a
+passing workflow. Keep a missing desktop service or GUI exit 2 visible as a blocker.
 
 ## Collaborate and finish
 
@@ -98,8 +110,10 @@ design document only for a decision future maintainers need to recover.
 
 Review `git diff`, `git diff --check`, and the staged diff before committing.
 Commit or push when authorized by the task; a local commit request alone does not
-authorize a push or release. Keep caches, builds, screenshots and trial checkouts
-out of Git. Finish with what changed, why, commands/results and unverified behavior.
+authorize a push or release. Keep caches, builds, generated test screenshots and
+trial checkouts out of Git; intentionally published screenshots under `docs/images/`
+are source documentation assets. Finish with what changed, why, commands/results
+and unverified behavior.
 Never describe a blocked or unrun check as passing.
 
 ## Code Review Rules

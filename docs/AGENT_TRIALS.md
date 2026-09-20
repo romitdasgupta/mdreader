@@ -4,7 +4,13 @@ The entry point is [AGENTS.md](../AGENTS.md); [AGENT.md](../AGENT.md) forwards t
 Codex discovers the plural filename by default; the singular file alone is not
 enough. This convention was checked against the
 [official instruction discovery documentation](https://learn.chatgpt.com/docs/agent-configuration/agents-md)
-on 2026-09-20. No per-user Codex configuration is required.
+on 2026-09-20 and rechecked for the public release. No per-user Codex configuration
+is required. `AGENT.md` stays a pointer so contributor instructions have one source.
+
+The public-release guidance also covers the Flatpak manifest and runtime,
+installed-package provenance, original document paths from the GTK chooser, and
+hosted CI results. Test screenshots remain ignored; curated screenshots in
+`docs/images/` are published documentation assets.
 
 ## Repeatable evaluation
 
@@ -31,12 +37,54 @@ documented command fails, improve the guidance and repeat the affected trial.
    The agent should run the headless suite and GUI command, retain GUI exit 2 as
    blocked, and distinguish current results from historical release evidence.
    It must not change application logic or environment policy to force success.
+4. **Installed-package release check:** give a fresh agent the current checkout
+   and a development interpreter, without the authoring conversation. Ask it to
+   verify packaging on a headless worker. It should use the installed-package
+   verifier, reject source imports as package evidence, preserve GUI exit 2, and
+   distinguish a wheel result from Flatpak runtime and hosted workflow validation.
 
 The maintainer's review favors the smallest complete solution and credible evidence.
 These trials test practical usefulness, not universal reliability or superiority to
 an unguided agent. There is no automatic model benchmark or required paid API.
 
-## Evaluation record
+## Public-release guidance evaluation
+
+On **2026-09-20**, a fresh agent received a disposable snapshot of the public-release
+documentation and a development interpreter, without this release's authoring
+conversation. The task was to assess package readiness on a headless worker.
+GUI commands had to unset both display variables and select X11; source changes,
+alternative displays, network dependency downloads, system installation, commits,
+pushes and publication were prohibited. Temporary package environments were allowed.
+
+The tested `AGENTS.md` SHA-256 was
+`cfcad0a9637664c1b723da1fca0cd55fcc094fd413e11d50547ab5e3aa3b262d`;
+the README SHA-256 was
+`091f9a8388c95e880b1562fd6385caa910f9ef641f54df4d73e184ece6c0aaf0`.
+
+From the disposable checkout, the agent ran:
+
+```sh
+env -u DISPLAY -u WAYLAND_DISPLAY GDK_BACKEND=x11 PIP_NO_INDEX=1 .venv/bin/python -m pytest -q
+env -u DISPLAY -u WAYLAND_DISPLAY GDK_BACKEND=x11 .venv/bin/python scripts/smoke_gui.py
+env -u DISPLAY -u WAYLAND_DISPLAY GDK_BACKEND=x11 PIP_NO_INDEX=1 .venv/bin/python scripts/verify_package.py --gui
+```
+
+The core suite passed **76 tests**. Source GUI verification returned **2** for the
+missing display. The package verifier built the source archive and wheel, installed
+into a temporary environment, and passed installed provenance, CSS, renderer and
+launcher checks outside the checkout. Its installed GUI check also returned **2**.
+The agent correctly separated those successful headless checks from unavailable
+GUI, Flatpak, desktop and hosted-release verification; it did not claim release
+readiness based on prior reports. The disposable checkout remained clean.
+
+This trial passed its guidance criteria. It validates instruction use and honest
+handling of unavailable evidence, not GUI behavior. Actual graphical and consumer
+package results are documented separately in [RELEASE.md](RELEASE.md).
+
+## Initial guidance evaluation (historical)
+
+The results below describe the initial guidance revision, not the current release's
+test count. Current application verification is recorded in [RELEASE.md](RELEASE.md).
 
 Evaluation date: **2026-09-20**. Base application revision:
 `464dac13c08d1f4a4e3760e94aadced11d11165d`. Trials used disposable clones with the candidate
@@ -124,14 +172,13 @@ this environment despite GTK working. Guidance now selects the development venv
 and provides an executable wheel recipe. Historical file ownership and “no commit
 exists yet” language were corrected. These changes preceded the measured trials.
 
-The DHH-inspired reviewer is a design perspective, not DHH or an endorsement. Its
-acceptance bar is small changes, demonstrated behavior, proportionate checks and
-truthful limits. All three task trials passed. Final review on 2026-09-20
-**approved the artifact commit with no blocking corrections** after independently inspecting the guide,
-reports, trial diffs, package log, startup-discovery output and typography metrics.
+All three task trials passed. An independent review on 2026-09-20 inspected the
+guide, reports, trial diffs, package log, startup-discovery output and typography
+metrics and found no blocking corrections.
 The real checkout's runtime diff remained empty. The reviewer required the limits
 above to remain explicit and found no reason for another harness or trial run.
 Raw transcripts, trial reports, metrics and patches are retained locally under the
 ignored `artifacts/agent-guidance/`; the task requests, hashes, commands and outcomes
 above are the durable evidence. No runtime changes from these trials belong in the
-artifact commit. No remote CI run or cross-distribution validation is claimed.
+artifact commit. These historical trials did not establish remote CI or
+cross-distribution validation.

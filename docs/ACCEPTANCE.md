@@ -1,6 +1,14 @@
 # Folio acceptance checklist
 
-This checklist verifies the native GTK 3 and WebKitGTK 4.1 reader defined in [PRODUCT.md](PRODUCT.md). An unchecked box is a check to run, not a claim of a defect. Record automated, visual, and environment-blocked results separately. Open, render, outline, find, themes, keyboard operation, reload, and graceful errors are required; zoom and other optional polish are checked only if implemented.
+This checklist verifies the native GTK 3 and WebKitGTK 4.1 reader defined in [PRODUCT.md](PRODUCT.md), including its distributed Flatpak. An unchecked box is a check to run, not a claim of a defect. Record automated, visual, and environment-blocked results separately in the release record; this checklist does not assert that a check has passed.
+
+## Consumer installation
+
+- [ ] On a disposable x86-64 Linux desktop with Flatpak, follow the README installation instructions starting without Folio or its GNOME runtime installed. Flatpak resolves the runtime dependencies without a separate Python, GTK or WebKit installation.
+- [ ] Launch the installed bundle outside the source checkout. Verify package provenance and packaged styles using the [installed-runtime checks](DISTRIBUTION.md#verify).
+- [ ] The exported desktop entry opens both an empty reader and a selected Markdown document. Its icon and Open With metadata are available to the desktop; installation does not change default file associations.
+- [ ] Updating to a newer bundle preserves preferences. Uninstall removes the application without modifying documents; preferences remain unless application-data deletion is explicitly requested.
+- [ ] Installation instructions state the supported architecture, Flatpak prerequisite, first-install network requirement and manual application-update process.
 
 ## Test fixtures
 
@@ -13,7 +21,7 @@ This checklist verifies the native GTK 3 and WebKitGTK 4.1 reader defined in [PR
 ## First use and opening documents
 
 - [ ] Launching without a path opens a native application window with a clear way to open a Markdown file.
-- [ ] Opening a Markdown file from the native file chooser displays its content and identifies the current file in the window.
+- [ ] Opening a Markdown file from the native GTK file chooser displays its content and identifies the current file in the window. The selected path retains access to sibling images and linked documents inside the Flatpak.
 - [ ] A command-line path opens that document; a path containing spaces or Unicode works without manual escaping beyond normal shell quoting.
 - [ ] Canceling the chooser preserves the current document and scroll position.
 - [ ] Opening an empty file is a successful, understandable empty-document state.
@@ -36,9 +44,11 @@ This checklist verifies the native GTK 3 and WebKitGTK 4.1 reader defined in [PR
 - [ ] Keyboard focus is visible, moves through primary controls predictably, and can return to the document without a pointer.
 - [ ] The outline can be collapsed; selecting an entry scrolls to the corresponding heading; duplicate headings do not select the wrong section. A document without headings has no distracting empty sidebar.
 - [ ] `Ctrl+F` shows search; matching text is visibly located, Enter and Shift+Enter traverse next/previous matches, a no-match query is clear, and Escape closes search and returns focus to reading.
-- [ ] If the MVP includes zoom, repeated increase/decrease operations stay within sensible limits and reset returns to the documented default.
+- [ ] Repeated text-size increase/decrease operations stay within sensible limits and reset returns to the documented default.
 - [ ] Reload displays saved changes to the current file; a reload failure leaves the last successfully rendered content readable and reports the problem.
-- [ ] When automatic reload ships, saving the document in another process updates the view after debouncing without stealing focus; reading position is preserved where feasible. Atomic file replacement and temporary deletion do not crash the app.
+- [ ] Saving the document in another process updates the view after debouncing without stealing focus; reading position is preserved where feasible. Atomic file replacement and temporary deletion do not crash the app.
+- [ ] Theme, text size, window size and outline preferences survive a restart. Unavailable or corrupt preference storage never prevents reading.
+- [ ] Dropping a local Markdown file into the window opens it without modifying the source.
 
 ## Untrusted content and privacy
 
@@ -60,4 +70,4 @@ This checklist verifies the native GTK 3 and WebKitGTK 4.1 reader defined in [PR
 
 ## Explicit scope limits
 
-The first release is for reading local Markdown. Editing, synchronization, accounts, collaboration, remote document fetching, and publishing are outside the acceptance scope unless the product owner explicitly adds them.
+The application reads local Markdown. Editing, synchronization, accounts, collaboration, remote document fetching and publishing document contents are outside its scope.

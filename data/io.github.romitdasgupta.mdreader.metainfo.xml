@@ -27,6 +27,16 @@
     <mediatype>text/x-markdown</mediatype>
   </provides>
   <content_rating type="oars-1.1"/>
+  <screenshots>
+    <screenshot type="default">
+      <caption>A local Markdown document in the light theme</caption>
+      <image>https://raw.githubusercontent.com/romitdasgupta/mdreader/v0.1.0/docs/images/folio-light.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The same document in the dark theme</caption>
+      <image>https://raw.githubusercontent.com/romitdasgupta/mdreader/v0.1.0/docs/images/folio-dark.png</image>
+    </screenshot>
+  </screenshots>
   <releases>
     <release version="0.1.0" date="2026-09-20">
       <description>

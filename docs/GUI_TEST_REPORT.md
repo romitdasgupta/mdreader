@@ -1,54 +1,91 @@
-# Native GUI verification
+# GUI verification
 
-The final GUI smoke run passed all 14 check groups against a realized GTK window and a real WebKit rendering process. The test runner is [scripts/smoke_gui.py](../scripts/smoke_gui.py).
+[scripts/smoke_gui.py](../scripts/smoke_gui.py) exercises a real GTK window and
+WebKit rendering process. This document describes the checks and how to reproduce
+them; dated release results belong in [RELEASE.md](RELEASE.md).
+
+## Run the checks
+
+After the [development setup](../README.md#dependencies-on-a-fresh-system), run
+from the repository root on a graphical Linux desktop:
 
 ```sh
-python3 scripts/smoke_gui.py
+.venv/bin/python scripts/smoke_gui.py
 ```
 
-The runner uses temporary document fixtures, configuration and cache directories. It restores its environment, closes the window, and checks monitor cleanup. It waits for observable conditions and WebKit load events. Missing GUI dependencies or a missing display return exit code 2 with `BLOCKED`; they do not count as a pass. GTK animations are disabled within the test process so screenshots capture settled appearances. `GTK_USE_PORTAL=0` selects the introspectable native GTK chooser fallback.
+For a headless machine with Xvfb and D-Bus installed:
 
-## Environment
+```sh
+xvfb-run -a dbus-run-session -- .venv/bin/python scripts/smoke_gui.py
+```
 
-| Component | Tested value |
-| --- | --- |
-| Distribution | Ubuntu 26.04 LTS, x86-64 |
-| Processor | AMD Ryzen 9 7950X3D |
-| Python | 3.14.4 |
-| GTK | 3.24.52 |
-| WebKitGTK | 2.52.6, introspection API 4.1 |
-| Display | X11/XWayland `:0`, 2× display scale |
-| Desktop theme | Yaru family; light and dark appearances |
+A normal run checks the source checkout. To verify a built wheel outside the
+checkout in a disposable environment:
 
-## Verified behavior
+```sh
+.venv/bin/python scripts/verify_package.py --gui
+```
 
-- Native first-use window, disabled document-only controls, and empty-state presentation.
-- `Ctrl+O` dispatched through GTK with a native GDK key event: chooser acceptance opens the selected Unicode path; cancel preserves the document and scroll position.
-- Real rendered headings through level six, duplicate headings, Unicode, local images with spaces in their names, code whitespace, tables and task checkboxes.
-- Outline selection scrolls to the correct duplicate heading. Outline collapse and same-document heading links work.
-- `Ctrl+F`, Enter, Shift+Enter and Escape traverse GTK keyboard handling. Matching and absent queries produce the expected feedback.
-- Both native controls and the reading surface switch between light and dark. A 680 × 600 logical-pixel window retains readable content and controls. Zoom respects its bounds and reset.
-- A relative Markdown link opens the neighboring document and reaches its unprefixed `#destination` heading anchor.
-- Missing paths, directories, invalid UTF-8 and oversized files show errors while retaining the previous rendered document. Empty and UTF-8 BOM files open successfully.
-- Raw HTML/script markup remains visible as inert text; no injected script/image elements appear, and remote image inputs are removed from the rendered page.
-- Automatic reload handles atomic replacement, in-place writes, deletion and recreation. Successful reloads preserve scroll position and search focus; failure retains the last readable page. `Ctrl+R` reloads explicitly.
-- A 10,009-line document renders and finds a word near its end. Very wide code and table content scroll inside their own containers without widening the page.
-- Reading and navigation leave fixture checksums unchanged. Closing the window cancels its file monitor and queued reload callback.
+The consumer Flatpak needs its own installed-runtime check; follow
+[distribution verification](DISTRIBUTION.md#verify).
+`--installed` rejects source and editable-package imports. A successful source
+run does not establish that the distributed package contains the same resources
+or can launch with its declared dependencies.
 
-The 10,009-line fixture reached WebKit's finished-load event in approximately **0.12–0.13 seconds** on this machine, including synchronous file reading and Markdown conversion. This measures loading in an already-running application, not cold application startup. Timing is recorded on every run in the JSON artifact.
+The runner returns exit **0** after all checks pass, **1** on a check failure,
+and **2** when GTK/WebKit or a display is unavailable. An unavailable environment
+is not a passing GUI result. A watchdog terminates a stuck chooser with a failure
+and a Python traceback.
 
-## Visual evidence
+## Covered behavior
 
-Full-window screenshots were generated and visually inspected. Headers, controls, outline, document content and status text remain legible. Light mode uses light native chrome; dark mode uses dark native chrome with readable button icons. The narrow capture preserves the full toolbar and wraps the reading layout.
+- First-use window and disabled document-only controls.
+- Native GTK chooser acceptance and cancellation through keyboard dispatch;
+  the selected document retains its real path and can display a sibling image.
+- Headings, Unicode, local images, code whitespace, tables and task checkboxes.
+- Outline selection, duplicate headings, outline visibility and heading links.
+- Search shortcuts, next/previous matches, missing queries and dismissal.
+- Light/dark appearance, narrow layout and bounded text zoom.
+- Relative Markdown links, including destination heading anchors.
+- Missing, non-file, invalidly encoded and oversized inputs; failed replacements
+  retain the previous page. Empty and UTF-8 BOM documents remain readable.
+- Inert raw HTML, blocked script markup and unavailable remote images.
+- Explicit reload and monitored changes, including atomic saves, deletion and
+  recreation; scroll position, search focus and monitor cleanup.
+- A document longer than 10,000 lines, with wide code and table content.
+- Unchanged source-document and image checksums after reading and navigation.
 
-- [First use](../artifacts/folio-empty.png)
-- [Light appearance](../artifacts/folio-light.png)
-- [Dark appearance](../artifacts/folio-dark.png)
-- [Narrow window](../artifacts/folio-narrow.png)
-- [Machine-readable results and measurements](../artifacts/gui-smoke.json)
+Folio deliberately uses GTK's file chooser directly. A portal that exports only
+the selected Markdown file can hide adjacent images and linked documents. The
+Flatpak's read-only directory access and direct chooser preserve that context
+without granting write access to the document folder.
 
-These artifacts are regenerated locally by the runner and are not required to launch the application.
+## Inspect the evidence
 
-## Limits of this run
+The runner uses temporary fixtures, configuration and cache directories. It
+waits for observable conditions and WebKit load events, and disables GTK
+animations in the test process so captures show settled states.
 
-The test synthesizes GDK keyboard events with keymap information; it does not operate physical input hardware. Desktop portal chooser integration, drag-and-drop, external browser launch, screen-reader behavior and a Wayland-only session still require separate checks. Unreadable-file behavior depends on process privileges and is covered by the separate core test suite. Network capture was not performed; GUI assertions verify the generated inert DOM, while parser/resource policy has separate unit coverage. Package installation and command-line entry-point verification are reported separately.
+Source runs write `gui-smoke.json` and empty/light/dark/narrow screenshots under
+`artifacts/` by default; `--artifacts` selects another output directory. Wheel
+verification defaults to `artifacts/package/`. These generated files are ignored
+by Git and will not exist in a fresh checkout until the checks run.
+
+Inspect all four fresh screenshots for readable controls, consistent document
+and window themes, clipping, and narrow-window behavior. Record the tested
+revision, command, environment, result and remaining limitations. The JSON report
+includes package provenance, dependency versions and timing measurements. Loading
+time is measured in an already-running application; it is not cold startup time
+or a performance guarantee for other machines.
+
+## Checks that need separate evidence
+
+The smoke test synthesizes GDK keyboard events; it does not operate physical
+input hardware. Desktop-entry launches, drag-and-drop delivery, external browser
+launch, screen-reader behavior and Wayland-only sessions need separate checks.
+Core tests cover unreadable-file handling independently of GUI process privileges.
+DOM assertions and renderer tests check content isolation; the smoke runner does
+not capture network traffic.
+
+For a release, also follow the [acceptance checklist](ACCEPTANCE.md) and verify
+installation and desktop integration using the actual distributed bundle.

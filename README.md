@@ -1,14 +1,16 @@
 # Folio
 
-A quiet, native Linux reader for Markdown. GTK provides the desktop interface; WebKitGTK typesets the document. Everything runs locally.
+A quiet, native Linux reader for Markdown. Open a document, follow its outline, search its text, and read in a light or dark theme. Everything runs locally, and reading never modifies your files.
 
-Folio opens local Markdown files with a heading outline, in-document search, light and dark themes, adjustable text size, and automatic reload. It supports tables, task lists, fenced code, and local images. Reading never modifies your source files.
+![Folio displaying the welcome document in its light theme](docs/images/folio-light.png)
+
+Folio supports tables, task lists, fenced code, local images, adjustable text size, and automatic reload when your editor saves. GTK provides the desktop interface; WebKitGTK typesets the document. [See the dark theme](docs/images/folio-dark.png).
 
 ## Install
 
-Download `folio-0.1.0-x86_64.flatpak` from [GitHub Releases](https://github.com/romitdasgupta/mdreader/releases/latest). The initial binary release supports x86-64 Linux desktops with Flatpak. It includes Folio's Python packages and automatically installs the shared GNOME runtime containing Python, GTK and WebKitGTK.
+Download **`folio-0.1.0-x86_64.flatpak`** from [GitHub Releases](https://github.com/romitdasgupta/mdreader/releases/latest). The binary release supports **x86-64 Linux desktops with Flatpak**. It installs Folio and the shared runtime containing Python, GTK and WebKitGTK; no separate Python setup is needed.
 
-If Flatpak is not installed, follow [the setup instructions for your distribution](https://flatpak.org/setup/). On Ubuntu, install it with `sudo apt install flatpak`; log out and back in after first setting up Flatpak so desktop launchers appear.
+If you need Flatpak, follow [the setup instructions for your distribution](https://flatpak.org/setup/). On Ubuntu, run `sudo apt install flatpak`. Log out and back in after first setting up Flatpak so desktop launchers appear.
 
 From the directory containing the download:
 
@@ -17,42 +19,76 @@ flatpak install --user ./folio-0.1.0-x86_64.flatpak
 flatpak run io.github.romitdasgupta.mdreader
 ```
 
-Accept the runtime installation when prompted. The first install needs internet access and may download several hundred megabytes; shared runtimes are reused by other applications. Launch **Folio** from your application menu or choose it in your file manager's **Open With** menu. It does not change your default file associations.
+Accept the runtime installation when prompted. The first install needs internet access and may download several hundred megabytes. Other Flatpak applications can reuse the same runtime.
 
-To open a document from a terminal:
+Launch **Folio** from your application menu, choose it in your file manager's **Open With** menu, or open a document from a terminal:
 
 ```sh
 flatpak run io.github.romitdasgupta.mdreader /absolute/path/to/document.md
 ```
 
-The sandbox has read-only access to host files so nearby images, relative document links and automatic reload work. It has no network permission. Preferences stay in Flatpak's private application directory. This is an online installer, not an offline bundle of the runtime.
+Folio does not change your default file associations. This release is distributed directly through GitHub; it is not listed on Flathub.
 
-For a new Folio version, download its bundle and run `flatpak install --user ./<new-bundle>.flatpak` again. `flatpak update --user` updates shared runtimes; this direct-download channel does not provide automatic Folio updates. Uninstall with `flatpak uninstall --user io.github.romitdasgupta.mdreader`; documents and preferences are preserved unless you explicitly request deletion of application data.
+### Updates and uninstall
 
-Folio is distributed directly through GitHub, and is not currently listed on Flathub. See [distribution and release instructions](docs/DISTRIBUTION.md) for building and checking a release.
+To update Folio, download the new release bundle and install it with `flatpak install --user ./<new-bundle>.flatpak`. This channel does not provide automatic application updates. Keep the shared runtime updated with:
+
+```sh
+flatpak update --user
+```
+
+Uninstall with:
+
+```sh
+flatpak uninstall --user io.github.romitdasgupta.mdreader
+```
+
+Documents and preferences are preserved unless you explicitly request deletion of application data. Each release includes a `.sha256` file for optional download verification with `sha256sum -c <filename>.sha256`.
+
+## Reading
+
+Use **Open**, press **Ctrl+O**, or drop a Markdown file into the window. The header controls toggle the outline and theme.
+
+| Action | Shortcut |
+| --- | --- |
+| Open a file | Ctrl+O |
+| Find text | Ctrl+F |
+| Next / previous result | Enter / Shift+Enter in search |
+| Dismiss search | Escape |
+| Toggle the outline | F9 |
+| Reload | Ctrl+R |
+| Increase / decrease text size | Ctrl++ / Ctrl+− |
+| Reset text size | Ctrl+0 |
+
+Local Markdown links open in Folio. Web and email links open in the desktop's default handler when clicked. Automatic reload handles ordinary and atomic saves; a failed open or reload leaves the current document available.
+
+### Files and privacy
+
+Documents must be UTF-8, with or without a BOM, and no larger than 10 MiB. Supported local images are embedded from the document's directory tree; images outside it are unavailable. Raw HTML is displayed as text, document scripts do not run, and remote images are blocked.
+
+The Flatpak has read-only access to host files so nearby images, relative links and reload work. Flatpak still hides some reserved paths. The application has no network permission, accounts, telemetry, editor, or server.
+
+Flatpak preferences are stored in `~/.var/app/io.github.romitdasgupta.mdreader/config/folio/`. Source installations use `$XDG_CONFIG_HOME/folio` or `~/.config/folio`.
 
 ## Run from source
 
-On this workspace's Linux desktop, the dependencies are already installed:
-
-```sh
-./bin/folio examples/welcome.md
-```
-
-Or launch the empty reader with `python3 -m folio`. Use `Ctrl+O` or drop a Markdown file into the window to open a document.
+The Flatpak is the recommended installation for readers. Source and wheel installations require native dependencies supplied by your distribution.
 
 ### Dependencies on a fresh system
 
-Python 3.11 or newer, PyGObject, GTK 3, WebKitGTK 4.1, and markdown-it-py are required. On Debian/Ubuntu:
+Folio requires Python 3.11+, PyGObject, GTK 3, WebKitGTK 4.1, and markdown-it-py 3.x or 4.x. On Ubuntu 24.04 or newer:
 
 ```sh
-sudo apt install python3 python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-webkit2-4.1 python3-markdown-it
+sudo apt install git python3 python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-webkit2-4.1 python3-markdown-it
+
+git clone https://github.com/romitdasgupta/mdreader.git
+cd mdreader
 /usr/bin/python3 -m folio examples/welcome.md
 ```
 
-Run that command from this checkout. GTK needs a running graphical Linux desktop. If your `python3` comes from a custom Python installation or virtual environment, use `/usr/bin/python3` so it can find the distro's GTK bindings.
+Run without a file argument for an empty window. A graphical Linux session is required. Use the distribution's `/usr/bin/python3` so it can find the native GTK bindings. Installing the Python package alone does not install GTK or WebKitGTK.
 
-For Python development or a wheel installation, retain access to the system bindings:
+For development, retain access to those system bindings:
 
 ```sh
 sudo apt install python3-venv
@@ -61,71 +97,44 @@ sudo apt install python3-venv
 .venv/bin/folio examples/welcome.md
 ```
 
-Installing the Python package alone does not install GTK or WebKitGTK.
+### Optional source desktop integration
 
-### Source install with desktop integration
-
-After installing the source dependencies above, install a copy of the application, an icon, and a desktop launcher in `~/.local`:
+After installing the source dependencies, copy the app, icon and launcher into `~/.local`:
 
 ```sh
 /usr/bin/python3 scripts/install_local.py
 ```
 
-Launch **Folio** from your desktop menu, select it with your file manager's **Open With**, or use `~/.local/bin/folio file.md`. The installer does not change your default file associations. Rerun it after updating the source checkout. Uninstall with `python3 scripts/install_local.py --uninstall`; preferences are preserved.
+Launch **Folio** from your menu or run `~/.local/bin/folio file.md`. Rerun the installer after updating your checkout. Remove this source installation with `/usr/bin/python3 scripts/install_local.py --uninstall`; preferences are preserved. This installer does not install dependencies or change default file associations.
 
-## Reading
+## Development and contributing
 
-| Action | Shortcut |
-| --- | --- |
-| Open a file | Ctrl+O |
-| Find text | Ctrl+F |
-| Next / previous result | Enter / Shift+Enter in search |
-| Dismiss search | Escape |
-| Reload | Ctrl+R |
-| Increase / decrease text size | Ctrl++ / Ctrl+− |
-| Reset text size | Ctrl+0 |
+Bug reports and focused pull requests are welcome through [GitHub Issues](https://github.com/romitdasgupta/mdreader/issues) and pull requests. Include reproduction steps, your distribution, installation method, and relevant error output. Please use a minimal example document without private content.
 
-Use the header controls to toggle the outline or theme. Documents are UTF-8, including UTF-8 with a BOM, up to 10 MiB. Theme and window preferences are saved under `$XDG_CONFIG_HOME/folio` or `~/.config/folio`.
+Start with [AGENTS.md](AGENTS.md) for the module map, boundaries and verification requirements; it applies to human and agent-assisted changes. The [architecture](docs/ARCHITECTURE.md) and [product scope](docs/PRODUCT.md) explain the design. The parser and preferences run without GTK or a display.
 
-Local Markdown links open in Folio. Web and email links open in the desktop's default handler only when clicked. Raw HTML is displayed as text, remote images are blocked, and supported local images are embedded from the document's directory tree. Images outside that tree are deliberately unavailable. Folio has no editor, cloud account, telemetry, or server.
-
-## Development
-
-Agents and contributors should start with [AGENTS.md](AGENTS.md) for the module
-map, development boundaries, and checks appropriate to a change. [AGENT.md](AGENT.md)
-is an alternate entry point to the same guide.
+After the development setup above:
 
 ```sh
-source .venv/bin/activate            # After the development setup above
-python3 -m pytest -q                 # Core and regression tests
-python3 scripts/smoke_gui.py         # Real GTK/WebKit checks; needs a display
-python3 -m build --no-isolation      # Wheel and source archive in dist/
+.venv/bin/python -m pytest -q
+.venv/bin/python scripts/smoke_gui.py
+.venv/bin/python -m build --no-isolation
 ```
 
-The document parser is independent of GTK. The UI consumes a rendered document, outline, and statistics from that module. See [architecture](docs/ARCHITECTURE.md), [product decisions](docs/PRODUCT.md), [acceptance criteria](docs/ACCEPTANCE.md), and [release verification](docs/RELEASE.md).
-
-If `python3 -m build` reports a missing module (including `build.__main__`), use
-the development venv after installing `.[dev]`; the system Python can have GTK
-without the Python build frontend. For example, run
-`make PYTHON=.venv/bin/python build`. Install distro prerequisites as needed;
-this workspace's dependencies are not a guarantee about a fresh machine.
+GUI checks need a display or Xvfb. Exit 2 means the GUI environment is unavailable, not a passing check. The development venv supplies the build frontend; system Python may have GTK without `build`.
 
 ### Package verification
 
-A source-tree run cannot verify wheel contents. This builds the source archive and
-wheel, installs into a disposable environment, and checks the package outside the
-checkout. Add `--gui` on a graphical desktop to run the full installed GTK/WebKit
-smoke suite; screenshots go under `artifacts/package/`.
+Build the source archive and wheel, install into a disposable environment, and verify outside the checkout:
 
 ```sh
 .venv/bin/python scripts/verify_package.py --gui
 ```
 
-Omit `--gui` for headless package verification. `scripts/smoke_gui.py` normally tests
-the checkout; `--installed` deliberately tests the installed distribution and rejects
-an editable/source import. Test `scripts/install_local.py` only with a disposable
-`--prefix`. The consumer Flatpak has a separate [build and verification recipe](docs/DISTRIBUTION.md).
+Omit `--gui` for headless package checks. Screenshots and the GUI report are written under `artifacts/package/`. The smoke runner normally tests the checkout; `--installed` verifies the installed distribution and rejects editable/source imports. Test the local installer only with a disposable `--prefix`.
 
-Built by the requested team roles: two coders, two testers, two PMs, a Steve Jobs-inspired product perspective, and a Linus Torvalds-inspired architecture perspective. These are assigned agent roles, not endorsements by those people.
+See [distribution and release instructions](docs/DISTRIBUTION.md) for Flatpak builds, [GUI verification](docs/GUI_TEST_REPORT.md) for the test procedure, [acceptance criteria](docs/ACCEPTANCE.md) for manual checks, and [release verification](docs/RELEASE.md) for the tested environment and remaining limits. CI builds the Flatpak and runs its installed GUI checks on pushes and pull requests.
 
-MIT licensed. This is the initial 0.1 release.
+## License and development
+
+Folio is [MIT licensed](LICENSE). Its implementation, documentation and packaging were developed with AI assistance and verified through automated tests, real GUI checks and code review.

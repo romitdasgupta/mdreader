@@ -1,19 +1,17 @@
 # Distributing Folio
 
-Folio's consumer package is an x86-64 Flatpak bundle published on GitHub Releases.
-It uses GNOME Platform 50 for Python, PyGObject, GTK 3 and WebKitGTK 4.1, and bundles
-hash-pinned markdown-it-py and mdurl wheels. The SDK and build backend are build-time
-dependencies. A wheel alone cannot supply the native desktop stack.
+Folio is distributed as an x86-64 Flatpak bundle through
+[GitHub Releases](https://github.com/romitdasgupta/mdreader/releases).
+GNOME Platform 50 supplies Python, PyGObject, GTK 3, and WebKitGTK 4.1.
+The package includes hash-pinned markdown-it-py and mdurl dependencies; the SDK
+and Python build backend are needed only when building.
 
-The application ID is `io.github.romitdasgupta.mdreader`, matching the source repository.
-The display name remains Folio. The source installer removes its initial
-`io.github.folio.Reader` launcher/icon when rerun. Flatpak keeps its preferences
-separately from a source installation.
+The application ID is `io.github.romitdasgupta.mdreader`. Its display name is
+Folio. See the [release verification](RELEASE.md) for tested behavior and limits.
 
 ## Build
 
-Install Flatpak, flatpak-builder and Python 3.11 or newer using your distribution's
-package manager. On Ubuntu 24.04 or newer, the build prerequisites are:
+Install Flatpak, flatpak-builder, and Python 3.11 or newer. On Ubuntu 24.04 or newer:
 
 ```sh
 sudo apt install flatpak flatpak-builder python3
@@ -21,75 +19,85 @@ flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/fl
 sh scripts/build_flatpak.sh
 ```
 
-Run from a checked-out release revision. The script installs the GNOME SDK/runtime,
-builds without network access inside the build sandbox, and emits the bundle and
-its `.sha256` file under `artifacts/flatpak/`. Source downloads happen before the
-sandboxed build and are checked against manifest hashes. Initial SDK downloads need
-several gigabytes of disk space. An optional output directory must be under
-`artifacts/` or `dist/`, or outside the checkout, to avoid recursive source copying.
+Run from the repository root at the revision being released. The script installs
+the GNOME SDK/runtime and writes the bundle and `.sha256` file under
+`artifacts/flatpak/`. It verifies dependency downloads against manifest hashes,
+then builds without network access inside the build sandbox. Allow several
+gigabytes for the initial SDK/runtime download and build cache.
 
-GitHub Actions builds this manifest and runs the installed GUI smoke checks on
-each push/PR. It uploads a bundle only if those checks pass. A `v*` tag must match
-the version in `pyproject.toml`. The workflow produces artifacts; publishing remains
-an explicit maintainer action.
+To choose another output directory, pass it as the script's first argument. Use
+`artifacts/`, `dist/`, or a directory outside the checkout so build output is not
+copied back into the application's sources.
 
-## Verify the consumer package
+[GitHub Actions](https://github.com/romitdasgupta/mdreader/blob/main/.github/workflows/flatpak.yml) also builds the package on
+pushes and pull requests. It installs and tests the application on GNOME Platform
+before uploading the bundle and checksum. A `v*` tag must match the version in
+`pyproject.toml`. The workflow produces artifacts; publishing is a separate step.
 
-Use a disposable user account, VM or container with a graphical session. Start
-with no application or GNOME runtime installed, then follow the README's install
-command. Accept the runtime repository prompt. The runtime URL is embedded in the
-bundle so Flatpak can resolve the native dependencies. Do not use `--no-deps`.
+## Verify
 
-For automated UI verification after installing, from the checkout:
+Use a disposable user account, VM, or container. Start without Folio or the GNOME
+runtime installed and follow the [consumer installation steps](../README.md#install).
+Accept runtime installation when prompted. The bundle embeds the runtime
+repository URL so Flatpak can resolve native dependencies; do not use `--no-deps`.
+
+After installation, run the GUI suite from the repository root:
 
 ```sh
 flatpak run --command=python3 io.github.romitdasgupta.mdreader -I \
   "$PWD/scripts/smoke_gui.py" --installed --artifacts /var/data/verification
 ```
 
-On a headless test machine, prefix that command with
-`xvfb-run -a dbus-run-session --` after installing `dbus-x11`, `xvfb` and `xauth`.
-The report and screenshots are in
+On a headless test machine, install `dbus-x11`, `xvfb`, and `xauth`, then prefix
+that command with `xvfb-run -a dbus-run-session --`. Minimal containers also need
+the desktop services configured in the [CI workflow](https://github.com/romitdasgupta/mdreader/blob/main/.github/workflows/flatpak.yml).
+The report and screenshots are written to
 `~/.var/app/io.github.romitdasgupta.mdreader/data/verification/`.
-The probe rejects source/editable imports and exercises the installed code on
-the Platform runtime, without the SDK. Exit 2 is an unavailable GUI, not a pass.
+The probe rejects source/editable imports and tests the installed application on
+the runtime, without the SDK. Exit 2 means GUI verification was unavailable.
 
-Folio uses GTK's file chooser directly. A portal's individual-file export can
-hide the document's siblings even with read-only directory permission; retaining
-the original path preserves images, links and monitoring. The smoke check verifies
-the selected path and image rendering. Also open a document through the installed
-launcher, follow a relative Markdown link, then atomically replace the current
-file from another program and observe the reload. Check menu and Open With launches.
+Inspect the light, dark, and narrow screenshots. Also open a document through the
+installed launcher, follow a relative Markdown link, and replace the current file
+atomically from another program to verify reload. Check the exported desktop
+entry's file launch and uninstall behavior using disposable documents and preferences.
 
-The sandbox grants read-only host filesystem access so sibling resources and
-parent-directory monitoring work across ordinary document locations. Flatpak
-still hides reserved/system-private paths; this is not a promise to read every
-host path. Folio has no network permission and retains its renderer's containment,
-size limits, CSP and navigation checks. Writable application data is confined to
-Flatpak's normal private directories.
+## Files and permissions
+
+The sandbox grants read-only host filesystem access so nearby images, relative
+links, and directory monitoring work across ordinary document locations. Flatpak
+still hides reserved and private system paths. Folio uses GTK's file dialog
+directly because a portal's single-file export can hide sibling resources.
+
+The package has no network permission. Preferences use Flatpak's private
+application directory and are separate from a source installation. The renderer's
+image containment, size limits, content security policy, and navigation checks
+remain in effect.
 
 ## Publish and maintain
 
-Before publishing, run core tests, wheel verification, the installed Flatpak smoke
-and desktop-launcher check. Validate desktop/AppStream metadata. Review source and release
-contents, and make sure the source repository is public. Commit the verified
-revision and tag it `v0.1.0`; attach only the matching `.flatpak` and `.sha256` files
-to the GitHub release. Keep builds, caches and test evidence out of Git. The release
-notes should state x86-64 Linux support and link the README installation steps.
+Before a release, update the version in `pyproject.toml`, `folio/__init__.py`,
+`folio/app.py`, and the AppStream release metadata. Update installation examples
+and release notes to match. Run the core tests, wheel verification, installed
+Flatpak GUI checks, and desktop-launcher checks, then validate desktop and
+AppStream metadata.
 
-Users install newer bundles with the same `flatpak install --user` command.
-There is no automatic application update feed yet. `flatpak update --user` keeps
-the shared runtime updated. Track GNOME runtime support and refresh the manifest
-before its branch becomes unsupported; update Python pins and hashes deliberately,
-then rerun the same checks.
+Commit and tag the release revision, wait for its GitHub Actions build to pass,
+and download that run's `folio-flatpak-x86_64` artifact. Verify the checksum with
+`sha256sum -c <bundle>.sha256`. Attach the matching `.flatpak` and `.sha256` files
+to the GitHub release. Keep build output, caches, and temporary test evidence out
+of Git. Release notes should state the supported architecture, link the
+installation instructions, and describe any unverified behavior.
 
-Flatpak and Flathub are separate. This release uses Flatpak's package format and
-Flathub's shared GNOME runtime without a Folio store listing. A later Flathub
-submission needs a public tagged source, published screenshots, and human review.
-Follow [the current submission requirements](https://docs.flathub.org/docs/for-app-authors/requirements),
-including disclosure of generated application/packaging material and their rules
-requiring human-authored submission interactions. This repository's implementation
-and packaging were developed with AI agents.
+Users upgrade by downloading a newer bundle and running
+`flatpak install --user ./<new-bundle>.flatpak`. There is no automatic Folio
+update feed. `flatpak update --user` updates shared runtimes. Refresh the GNOME
+runtime branch before it becomes unsupported, and update Python dependency
+versions and hashes deliberately, followed by the same verification.
+
+Folio uses Flathub's shared runtime but has no Flathub application listing. A later
+submission needs public tagged sources, published screenshots, and a human
+maintainer following the [current Flathub requirements](https://docs.flathub.org/docs/for-app-authors/requirements),
+including disclosure of generated material and human-authored submission interactions.
 
 References: [bundles and runtime discovery](https://docs.flatpak.org/en/latest/single-file-bundles.html),
 [sandbox permissions](https://docs.flatpak.org/en/latest/sandbox-permissions.html),
