@@ -58,7 +58,9 @@ and evidence, not a standing committee or mandatory planning paperwork.
   saves, preserve reading position where feasible, and clean up on window close.
 - The consumer package is a Flatpak using GNOME Platform 50. Keep its read-only
   host-file access and lack of network permission. Python dependencies belong in
-  `/app`; the build SDK must not mask dependencies absent from the Platform.
+  `/app`; the build SDK must not mask dependencies absent from the Platform. Keep
+  the documented WebKitGTK DMA-BUF compatibility setting unless the runtime
+  regression is resolved and re-tested on affected Wayland graphics stacks.
 - The GTK file chooser must retain the document's original directory. A portal's
   individual-file alias can hide adjacent images and links and break reload.
   Verify the selected path and nearby image before any direct test reopen.
@@ -77,7 +79,7 @@ not see distro GTK. Use the development venv for the build frontend.
 | Renderer or preferences | Add a focused regression when behavior changes; run it and `python3 -m pytest -q`. |
 | GTK, rendering CSS, navigation or reload | Run `python3 scripts/smoke_gui.py`; for appearance changes inspect fresh light/dark/narrow screenshots under `artifacts/`. |
 | Python packaging, resources or local installer | Run the [package verifier](README.md#package-verification) with the development interpreter; it verifies an installation outside the checkout. Use a disposable installer prefix. |
-| Flatpak manifest, dependencies, desktop identity or release workflow | Follow [distribution verification](docs/DISTRIBUTION.md): build the bundle, install with dependency resolution in a disposable environment, run `scripts/smoke_gui.py --installed` on the Platform runtime, and check exported desktop launching. |
+| Flatpak manifest, dependencies, desktop identity or release workflow | Follow [distribution verification](docs/DISTRIBUTION.md): build the bundle, install with dependency resolution in a disposable environment, run `scripts/smoke_gui.py --installed` on the Platform runtime, check exported desktop launching, and test the Wayland document-opening repro when a Wayland display is available. |
 | Docs or agent guidance | Check referenced paths and commands; exercise changed instructions with a fresh task. See [guidance trials](docs/AGENT_TRIALS.md). Do not add tests that merely match prose or CSS strings. |
 
 For a bug, first demonstrate the failure through observable behavior. Then fix it

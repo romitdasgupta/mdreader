@@ -8,14 +8,14 @@ Folio supports tables, task lists, fenced code, local images, adjustable text si
 
 ## Install
 
-Download **`folio-0.1.0-x86_64.flatpak`** from [GitHub Releases](https://github.com/romitdasgupta/mdreader/releases/latest). The binary release supports **x86-64 Linux desktops with Flatpak**. It installs Folio and the shared runtime containing Python, GTK and WebKitGTK; no separate Python setup is needed.
+Download **`folio-0.1.1-x86_64.flatpak`** from [GitHub Releases](https://github.com/romitdasgupta/mdreader/releases/latest). The binary release supports **x86-64 Linux desktops with Flatpak**. It installs Folio and the shared runtime containing Python, GTK and WebKitGTK; no separate Python setup is needed.
 
 If you need Flatpak, follow [the setup instructions for your distribution](https://flatpak.org/setup/). On Ubuntu, run `sudo apt install flatpak`. Log out and back in after first setting up Flatpak so desktop launchers appear.
 
 From the directory containing the download:
 
 ```sh
-flatpak install --user ./folio-0.1.0-x86_64.flatpak
+flatpak install --user ./folio-0.1.1-x86_64.flatpak
 flatpak run io.github.romitdasgupta.mdreader
 ```
 
@@ -67,6 +67,11 @@ Local Markdown links open in Folio. Web and email links open in the desktop's de
 Documents must be UTF-8, with or without a BOM, and no larger than 10 MiB. Supported local images are embedded from the document's directory tree; images outside it are unavailable. Raw HTML is displayed as text, document scripts do not run, and remote images are blocked.
 
 The Flatpak has read-only access to host files so nearby images, relative links and reload work. Flatpak still hides some reserved paths. The application has no network permission, accounts, telemetry, editor, or server.
+
+The Flatpak disables WebKitGTK's DMA-BUF renderer for compatibility with a known
+Wayland protocol failure in some graphics-driver/runtime combinations. This keeps
+documents open reliably; systems affected by that renderer issue may use a less
+GPU-accelerated WebKit path.
 
 Flatpak preferences are stored in `~/.var/app/io.github.romitdasgupta.mdreader/config/folio/`. Source installations use `$XDG_CONFIG_HOME/folio` or `~/.config/folio`.
 

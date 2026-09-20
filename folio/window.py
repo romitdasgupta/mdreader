@@ -587,6 +587,6 @@ class ReaderWindow(Gtk.ApplicationWindow):
         dialog.show()
 
     def show_about(self):
-        dialog = Gtk.AboutDialog(transient_for=self, modal=True, program_name="Folio", version="0.1.0", comments="A quiet place for your Markdown.", logo_icon_name="text-x-generic", license_type=Gtk.License.MIT_X11)
+        dialog = Gtk.AboutDialog(transient_for=self, modal=True, program_name="Folio", version="0.1.1", comments="A quiet place for your Markdown.", logo_icon_name="text-x-generic", license_type=Gtk.License.MIT_X11)
         dialog.connect("response", lambda widget, *_: widget.destroy())
         dialog.show()

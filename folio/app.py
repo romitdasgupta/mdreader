@@ -12,7 +12,7 @@ def main(argv: list[str] | None = None) -> int:
         prog="folio", description="A quiet, native Markdown reader for Linux."
     )
     parser.add_argument("file", nargs="?", help="Markdown or text document to open")
-    parser.add_argument("--version", action="version", version="Folio 0.1.0")
+    parser.add_argument("--version", action="version", version="Folio 0.1.1")
     args = parser.parse_args(argv)
     try:
         import gi

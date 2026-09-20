@@ -71,7 +71,10 @@ directly because a portal's single-file export can hide sibling resources.
 The package has no network permission. Preferences use Flatpak's private
 application directory and are separate from a source installation. The renderer's
 image containment, size limits, content security policy, and navigation checks
-remain in effect.
+remain in effect. The manifest sets `WEBKIT_DISABLE_DMABUF_RENDERER=1` because
+WebKitGTK's DMA-BUF path can terminate GTK applications with Wayland protocol
+error 71 on some graphics-driver/runtime combinations. This is a compatibility
+tradeoff: affected systems use a less GPU-accelerated rendering path.
 
 ## Publish and maintain
 

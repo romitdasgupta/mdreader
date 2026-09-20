@@ -57,3 +57,11 @@ any document directly.
 For repeatable build and release commands, see
 [Distributing Folio](DISTRIBUTION.md). Product scope and implementation contracts
 are documented in [PRODUCT.md](PRODUCT.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
+
+## Follow-up 0.1.1
+
+The 0.1.1 patch release disables WebKitGTK's DMA-BUF renderer in the Flatpak.
+This works around a known Wayland protocol error that can occur when the first
+document is rendered on some graphics-driver/runtime combinations. The setting
+trades some GPU acceleration for reliable document opening; the X11/Xvfb release
+checks and a direct Wayland document-opening repro both pass with it enabled.

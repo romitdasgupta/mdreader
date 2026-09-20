@@ -32,6 +32,19 @@ The consumer Flatpak needs its own installed-runtime check; follow
 run does not establish that the distributed package contains the same resources
 or can launch with its declared dependencies.
 
+For a Wayland smoke check against the installed Flatpak, open a real document
+through the application command:
+
+```sh
+timeout 15s flatpak run io.github.romitdasgupta.mdreader /absolute/path/to/file.md
+```
+
+The command should remain open until the timeout. Folio sets
+`WEBKIT_DISABLE_DMABUF_RENDERER=1` in the Flatpak because the GNOME runtime's
+DMA-BUF path can produce Wayland protocol error 71 on some graphics-driver
+combinations. X11/Xvfb CI verifies the full interaction suite; this command
+checks that document opening also works on the active Wayland compositor.
+
 The runner returns exit **0** after all checks pass, **1** on a check failure,
 and **2** when GTK/WebKit or a display is unavailable. An unavailable environment
 is not a passing GUI result. A watchdog terminates a stuck chooser with a failure

@@ -98,7 +98,10 @@ The consumer package is a Flatpak using GNOME Platform 50 for Python, PyGObject,
 GTK 3 and WebKitGTK 4.1. The manifest bundles hash-pinned markdown-it-py and mdurl;
 the SDK and setuptools are build dependencies. Read-only host filesystem access
 supports sibling resources and directory monitoring. The sandbox has no network
-permission and retains Flatpak's reserved-path restrictions.
+permission and retains Flatpak's reserved-path restrictions. The package disables
+WebKitGTK's DMA-BUF renderer to avoid a known Error 71 Wayland failure in some
+graphics-driver/runtime combinations; this trades some GPU acceleration for a
+working reader.
 
 Python wheels include the application and its CSS, and declare markdown-it-py as
 a dependency. Source and wheel installations obtain native libraries from system

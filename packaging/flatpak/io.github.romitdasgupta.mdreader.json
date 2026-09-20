@@ -9,6 +9,7 @@
         "--socket=fallback-x11",
         "--socket=wayland",
         "--device=dri",
+        "--env=WEBKIT_DISABLE_DMABUF_RENDERER=1",
         "--filesystem=host:ro"
     ],
     "modules": [

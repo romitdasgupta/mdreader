@@ -30,14 +30,20 @@
   <screenshots>
     <screenshot type="default">
       <caption>A local Markdown document in the light theme</caption>
-      <image>https://raw.githubusercontent.com/romitdasgupta/mdreader/v0.1.0/docs/images/folio-light.png</image>
+      <image>https://raw.githubusercontent.com/romitdasgupta/mdreader/v0.1.1/docs/images/folio-light.png</image>
     </screenshot>
     <screenshot>
       <caption>The same document in the dark theme</caption>
-      <image>https://raw.githubusercontent.com/romitdasgupta/mdreader/v0.1.0/docs/images/folio-dark.png</image>
+      <image>https://raw.githubusercontent.com/romitdasgupta/mdreader/v0.1.1/docs/images/folio-dark.png</image>
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.1.1" date="2026-09-20">
+      <description>
+        <p>Disable the WebKitGTK DMA-BUF renderer in the Flatpak for reliable
+        document opening on affected Wayland graphics configurations.</p>
+      </description>
+    </release>
     <release version="0.1.0" date="2026-09-20">
       <description>
         <p>Initial release with local Markdown reading, heading navigation,
