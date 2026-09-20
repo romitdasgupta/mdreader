@@ -1,0 +1,7 @@
+include Makefile
+recursive-include bin *
+recursive-include data *.desktop *.svg
+recursive-include docs *.md
+recursive-include examples *.md *.png
+recursive-include scripts *.py
+recursive-include tests *.py

@@ -1,0 +1,19 @@
+window.folio { background-color: @theme_bg_color; }
+.folio headerbar { min-height: 42px; padding: 5px 9px; }
+.folio headerbar button { min-height: 28px; }
+.folio .empty-state { padding: 44px; }
+.folio .empty-icon { color: @theme_selected_bg_color; opacity: 0.65; }
+.folio .empty-title { font-size: 26px; font-weight: 600; }
+.folio .empty-subtitle { font-size: 14px; opacity: 0.68; }
+.folio .empty-open { padding: 8px 20px; }
+.folio .outline { background-color: alpha(@theme_fg_color, 0.025); }
+.folio .outline-title { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; opacity: 0.55; }
+.folio .outline-list { background-color: transparent; }
+.folio .outline-list row { padding: 9px 13px; border-radius: 5px; margin: 1px 6px; }
+.folio .outline-list label { font-size: 12px; }
+.folio .statusbar { border-top: 1px solid alpha(@theme_fg_color, 0.09); padding: 7px 17px; }
+.folio .statusbar label { font-size: 11px; opacity: 0.64; }
+.folio .search-row { padding: 7px 12px; }
+.folio .search-feedback { font-size: 12px; opacity: 0.7; }
+.folio .search-no-results { color: @error_color; }
+.folio .error-message { padding: 3px 7px; }

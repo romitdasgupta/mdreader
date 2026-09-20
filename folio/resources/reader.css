@@ -1,0 +1,117 @@
+:root {
+  color-scheme: light;
+  --paper: #faf9f6;
+  --ink: #292e34;
+  --muted: #68727d;
+  --accent: #2367b1;
+  --line: #dedfdc;
+  --subtle: #f0f0eb;
+  --code: #eeefe9;
+  --selection: #cee3fb;
+}
+
+body[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #202429;
+  --ink: #e0e4e8;
+  --muted: #a0abb7;
+  --accent: #8dbefa;
+  --line: #41474e;
+  --subtle: #292e35;
+  --code: #30363d;
+  --selection: #345478;
+}
+
+* { box-sizing: border-box; }
+html { min-height: 100%; scroll-behavior: auto; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Noto Sans", "DejaVu Sans", sans-serif;
+  font-size: 18px;
+  line-height: 1.75;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--selection); }
+.document { max-width: 860px; margin: 0 auto; padding: 52px 48px 110px; }
+.document > :first-child { margin-top: 0; }
+.document > :last-child { margin-bottom: 0; }
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.28;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  scroll-margin-top: 32px;
+}
+h1 { margin: 1.4em 0 0.65em; font-size: 2.35em; line-height: 1.17; letter-spacing: -0.04em; }
+h2 { margin: 1.9em 0 0.7em; font-size: 1.6em; }
+h3 { margin: 1.65em 0 0.6em; font-size: 1.25em; }
+h4 { margin: 1.5em 0 0.55em; font-size: 1.08em; }
+h5, h6 { margin: 1.4em 0 0.5em; font-size: 1em; }
+h6 { color: var(--muted); }
+p, ul, ol, dl, pre, table, blockquote { margin: 0 0 1.25em; }
+h1 + h2, h2 + h3, h3 + h4 { margin-top: 1.15em; }
+strong { font-weight: 650; }
+a { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { text-decoration-thickness: 2px; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+.blocked-link { text-decoration: none; }
+
+ul, ol { padding-left: 1.65em; }
+li { padding-left: 0.2em; margin: 0.3em 0; }
+li > p { margin-bottom: 0.6em; }
+li ul, li ol { margin-top: 0.35em; margin-bottom: 0.45em; }
+li::marker { color: var(--muted); }
+.task-list-item { list-style: none; }
+.task-checkbox { margin-left: -1.55em; margin-right: 0.35em; width: 1em; height: 1em; accent-color: var(--accent); vertical-align: -0.08em; }
+
+blockquote { border-left: 3px solid var(--accent); padding: 0.15em 0 0.15em 1.25em; color: var(--muted); }
+blockquote > :last-child { margin-bottom: 0; }
+blockquote blockquote { margin-top: 0.7em; }
+hr { height: 1px; border: 0; background: var(--line); margin: 2.4em 0; }
+
+code, pre { font-family: "JetBrains Mono", "DejaVu Sans Mono", "Liberation Mono", monospace; }
+code { font-size: 0.83em; background: var(--code); padding: 0.14em 0.36em; border-radius: 4px; }
+pre {
+  max-width: 100%;
+  overflow: auto;
+  padding: 20px 23px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--subtle);
+  line-height: 1.6;
+  tab-size: 4;
+  white-space: pre;
+  overflow-wrap: normal;
+}
+pre code { font-size: 0.79em; padding: 0; border-radius: 0; background: transparent; }
+
+table { display: block; width: max-content; max-width: 100%; overflow: auto; border-collapse: collapse; font-size: 0.92em; line-height: 1.55; }
+th, td { border: 1px solid var(--line); padding: 11px 15px; text-align: left; }
+th { background: var(--subtle); font-weight: 650; }
+tbody tr:nth-child(even) { background: var(--subtle); }
+td code, th code { white-space: nowrap; }
+img { display: block; max-width: 100%; height: auto; margin: 1.4em auto; border-radius: 6px; }
+.image-fallback { display: block; padding: 17px 20px; border: 1px dashed var(--line); border-radius: 7px; color: var(--muted); font-size: 0.88em; }
+.empty-document { padding: 10vh 0; text-align: center; color: var(--muted); }
+.empty-document p:first-child { margin-bottom: 0.4em; color: var(--ink); font-size: 1.3em; font-weight: 600; }
+.empty-document p + p { font-size: 0.9em; }
+
+@media (max-width: 620px) {
+  body { font-size: 17px; }
+  .document { padding: 30px 24px 72px; }
+  h1 { font-size: 2em; }
+  pre { padding: 16px; }
+}
+@media (max-width: 380px) {
+  .document { padding-left: 18px; padding-right: 18px; }
+}
+@media print {
+  body { --paper: white; --ink: black; --muted: #444; --line: #bbb; }
+  .document { max-width: none; padding: 0; }
+  pre, blockquote, img { break-inside: avoid; }
+  h1, h2, h3 { break-after: avoid; }
+}

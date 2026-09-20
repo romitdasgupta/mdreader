@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Folio
+GenericName=Markdown Reader
+Comment=A quiet place for your Markdown
+Exec=folio %f
+Icon=io.github.folio.Reader
+Terminal=false
+Categories=Office;Viewer;
+MimeType=text/markdown;text/x-markdown;
+Keywords=Markdown;Reader;Documentation;
+StartupNotify=true

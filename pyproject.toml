@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "folio-reader"
+version = "0.1.0"
+description = "A quiet, native Linux reader for Markdown."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = ["markdown-it-py>=3.0,<5"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: X11 Applications :: GTK",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Topic :: Text Processing :: Markup :: Markdown",
+]
+
+[project.scripts]
+folio = "folio.app:main"
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+dev = ["pytest>=7", "build>=1", "setuptools>=77"]
+
+[tool.setuptools.packages.find]
+include = ["folio*"]
+
+[tool.setuptools.package-data]
+folio = ["resources/*.css"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
