@@ -18,6 +18,10 @@ classifiers = [
   "Topic :: Text Processing :: Markup :: Markdown",
 ]
 
+[project.urls]
+Homepage = "https://github.com/romitdasgupta/mdreader"
+Issues = "https://github.com/romitdasgupta/mdreader/issues"
+
 [project.scripts]
 folio = "folio.app:main"
 

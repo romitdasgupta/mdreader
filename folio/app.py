@@ -36,7 +36,7 @@ def main(argv: list[str] | None = None) -> int:
 
     class FolioApplication(Gtk.Application):
         def __init__(self):
-            super().__init__(application_id="io.github.folio.Reader", flags=Gio.ApplicationFlags.HANDLES_OPEN)
+            super().__init__(application_id="io.github.romitdasgupta.mdreader", flags=Gio.ApplicationFlags.HANDLES_OPEN)
             self.window = None
 
         def do_activate(self):

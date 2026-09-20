@@ -16,8 +16,12 @@ def main():
     root = Path(__file__).resolve().parent.parent
     app = prefix / "share/folio-reader"
     launcher = prefix / "bin/folio"
-    desktop = prefix / "share/applications/io.github.folio.Reader.desktop"
-    icon = prefix / "share/icons/hicolor/scalable/apps/io.github.folio.Reader.svg"
+    desktop = prefix / "share/applications/io.github.romitdasgupta.mdreader.desktop"
+    icon = prefix / "share/icons/hicolor/scalable/apps/io.github.romitdasgupta.mdreader.svg"
+    # Remove the initial source install's old identity when upgrading/uninstalling.
+    for old in ("applications/io.github.folio.Reader.desktop",
+                "icons/hicolor/scalable/apps/io.github.folio.Reader.svg"):
+        (prefix / "share" / old).unlink(missing_ok=True)
     if args.uninstall:
         for path in (launcher, desktop, icon):
             path.unlink(missing_ok=True)
@@ -42,9 +46,9 @@ def main():
     launcher.chmod(0o755)
     # Desktop Exec has its own quoting rules, unlike a shell command.
     escaped = str(launcher).replace("\\", "\\\\\\\\").replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace('%', '%%')
-    desktop.write_text((root / "data/io.github.folio.Reader.desktop").read_text()
+    desktop.write_text((root / "data/io.github.romitdasgupta.mdreader.desktop").read_text()
                        .replace("Exec=folio %f", f'Exec="{escaped}" %f'))
-    shutil.copy2(root / "data/icons/io.github.folio.Reader.svg", icon)
+    shutil.copy2(root / "data/icons/io.github.romitdasgupta.mdreader.svg", icon)
     print(f"Installed Folio. Launch with {launcher} or your desktop application menu.")
 
 

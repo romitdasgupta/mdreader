@@ -140,7 +140,11 @@ make preference persistence a prerequisite for reading a document.
 
 ## Distribution and verification
 
-System packages supply Python, PyGObject and the native GTK/WebKit libraries.
+The consumer Flatpak uses GNOME Platform 50 to supply Python, PyGObject and the
+native GTK/WebKit libraries; the manifest pins the bundled Python dependencies.
+See [distribution](DISTRIBUTION.md) for its read-only filesystem contract, build,
+installed-runtime verification and publication. Source installations use system
+packages for the native dependencies.
 Python packaging declares markdown-it-py and includes `reader.css` as package
 data. Document distro prerequisites and source launch instructions. Do not claim
 that `pip install` supplies the entire system desktop stack.

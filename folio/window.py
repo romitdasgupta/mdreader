@@ -19,7 +19,7 @@ from .settings import load_settings, save_settings
 class ReaderWindow(Gtk.ApplicationWindow):
     def __init__(self, application):
         super().__init__(application=application, title="Folio")
-        self.set_icon_name("io.github.folio.Reader")
+        self.set_icon_name("io.github.romitdasgupta.mdreader")
         self.preferences = load_settings()
         self.theme = self.preferences["theme"]
         self.document = None
@@ -244,7 +244,14 @@ class ReaderWindow(Gtk.ApplicationWindow):
                 application.set_accels_for_action("win." + name, accelerators)
 
     def choose_document(self):
-        chooser = Gtk.FileChooserNative.new("Open a document", self, Gtk.FileChooserAction.OPEN, "Open", "Cancel")
+        # Keep the real directory: a portal's single-file export hides sibling
+        # images/links and breaks directory monitoring in the read-only sandbox.
+        chooser = Gtk.FileChooserDialog(
+            title="Open a document", transient_for=self,
+            action=Gtk.FileChooserAction.OPEN,
+        )
+        chooser.add_buttons("Cancel", Gtk.ResponseType.CANCEL, "Open", Gtk.ResponseType.ACCEPT)
+        chooser.set_default_response(Gtk.ResponseType.ACCEPT)
         markdown_filter = Gtk.FileFilter()
         markdown_filter.set_name("Markdown and text documents")
         for pattern in ("*.md", "*.markdown", "*.mdown", "*.mkd", "*.txt", "*.MD", "*.MARKDOWN"):

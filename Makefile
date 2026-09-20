@@ -1,4 +1,4 @@
-.PHONY: run test smoke build install uninstall
+.PHONY: run test smoke build flatpak install uninstall
 
 PYTHON ?= python3
 
@@ -13,6 +13,9 @@ smoke:
 
 build:
 	$(PYTHON) -m build --no-isolation
+
+flatpak:
+	sh scripts/build_flatpak.sh
 
 install:
 	$(PYTHON) scripts/install_local.py

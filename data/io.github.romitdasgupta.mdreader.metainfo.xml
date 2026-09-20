@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.romitdasgupta.mdreader</id>
+  <name>Folio</name>
+  <summary>Read local Markdown documents</summary>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <developer id="io.github.romitdasgupta">
+    <name>Romit Dasgupta</name>
+  </developer>
+  <description>
+    <p>Folio is a quiet, native Markdown reader for Linux. Open a local document,
+    follow its headings, search its text, and read in a light or dark theme.</p>
+    <p>Tables, task lists, fenced code, and local images are supported. Folio
+    reloads documents when they change and never modifies your source files.
+    Everything runs locally, without an account or network access.</p>
+    <p>Read-only access to your files keeps relative links, nearby images, and
+    automatic reload working across document folders.</p>
+  </description>
+  <launchable type="desktop-id">io.github.romitdasgupta.mdreader.desktop</launchable>
+  <url type="homepage">https://github.com/romitdasgupta/mdreader</url>
+  <url type="bugtracker">https://github.com/romitdasgupta/mdreader/issues</url>
+  <url type="vcs-browser">https://github.com/romitdasgupta/mdreader</url>
+  <provides>
+    <binary>folio</binary>
+    <mediatype>text/markdown</mediatype>
+    <mediatype>text/x-markdown</mediatype>
+  </provides>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.1.0" date="2026-09-20">
+      <description>
+        <p>Initial release with local Markdown reading, heading navigation,
+        search, themes, and automatic reload.</p>
+      </description>
+    </release>
+  </releases>
+</component>

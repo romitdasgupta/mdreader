@@ -4,7 +4,34 @@ A quiet, native Linux reader for Markdown. GTK provides the desktop interface; W
 
 Folio opens local Markdown files with a heading outline, in-document search, light and dark themes, adjustable text size, and automatic reload. It supports tables, task lists, fenced code, and local images. Reading never modifies your source files.
 
-## Run
+## Install
+
+Download `folio-0.1.0-x86_64.flatpak` from [GitHub Releases](https://github.com/romitdasgupta/mdreader/releases/latest). The initial binary release supports x86-64 Linux desktops with Flatpak. It includes Folio's Python packages and automatically installs the shared GNOME runtime containing Python, GTK and WebKitGTK.
+
+If Flatpak is not installed, follow [the setup instructions for your distribution](https://flatpak.org/setup/). On Ubuntu, install it with `sudo apt install flatpak`; log out and back in after first setting up Flatpak so desktop launchers appear.
+
+From the directory containing the download:
+
+```sh
+flatpak install --user ./folio-0.1.0-x86_64.flatpak
+flatpak run io.github.romitdasgupta.mdreader
+```
+
+Accept the runtime installation when prompted. The first install needs internet access and may download several hundred megabytes; shared runtimes are reused by other applications. Launch **Folio** from your application menu or choose it in your file manager's **Open With** menu. It does not change your default file associations.
+
+To open a document from a terminal:
+
+```sh
+flatpak run io.github.romitdasgupta.mdreader /absolute/path/to/document.md
+```
+
+The sandbox has read-only access to host files so nearby images, relative document links and automatic reload work. It has no network permission. Preferences stay in Flatpak's private application directory. This is an online installer, not an offline bundle of the runtime.
+
+For a new Folio version, download its bundle and run `flatpak install --user ./<new-bundle>.flatpak` again. `flatpak update --user` updates shared runtimes; this direct-download channel does not provide automatic Folio updates. Uninstall with `flatpak uninstall --user io.github.romitdasgupta.mdreader`; documents and preferences are preserved unless you explicitly request deletion of application data.
+
+Folio is distributed directly through GitHub, and is not currently listed on Flathub. See [distribution and release instructions](docs/DISTRIBUTION.md) for building and checking a release.
+
+## Run from source
 
 On this workspace's Linux desktop, the dependencies are already installed:
 
@@ -36,9 +63,9 @@ sudo apt install python3-venv
 
 Installing the Python package alone does not install GTK or WebKitGTK.
 
-## Desktop integration
+### Source install with desktop integration
 
-Install a copy of the application, an icon, and a desktop launcher in `~/.local`:
+After installing the source dependencies above, install a copy of the application, an icon, and a desktop launcher in `~/.local`:
 
 ```sh
 /usr/bin/python3 scripts/install_local.py
@@ -85,56 +112,20 @@ this workspace's dependencies are not a guarantee about a fresh machine.
 
 ### Package verification
 
-A source-tree run cannot verify wheel contents. Install the built wheel in a fresh
-environment and check it outside the checkout. `scripts/smoke_gui.py` inserts the
-source checkout into Python's path, so using an installed interpreter to run that
-script still tests the source. The following recipe verifies the installed package.
-
-Run from the repository root after the development setup above. It builds into a
-temporary directory, checks the wheel, then removes the temporary environment:
+A source-tree run cannot verify wheel contents. This builds the source archive and
+wheel, installs into a disposable environment, and checks the package outside the
+checkout. Add `--gui` on a graphical desktop to run the full installed GTK/WebKit
+smoke suite; screenshots go under `artifacts/package/`.
 
 ```sh
-.venv/bin/python - <<'PY'
-import os
-from pathlib import Path
-import subprocess
-import sys
-import tempfile
-
-with tempfile.TemporaryDirectory(prefix="folio-package-") as directory:
-    check = Path(directory)
-    subprocess.run([sys.executable, "-m", "build", "--no-isolation",
-                    "--outdir", str(check / "dist")], check=True)
-    subprocess.run(["/usr/bin/python3", "-m", "venv", "--system-site-packages",
-                    str(check / "env")], check=True)
-    python = str(check / "env/bin/python")
-    wheel = next((check / "dist").glob("*.whl"))
-    subprocess.run([python, "-m", "pip", "install", str(wheel)], check=True)
-    probe = """
-import sys
-from pathlib import Path
-from importlib.resources import files
-import folio
-from folio.document import render_markdown
-assert Path(folio.__file__).resolve().is_relative_to(Path(sys.prefix).resolve())
-for name in ('reader.css', 'gtk.css'):
-    assert files('folio').joinpath('resources', name).read_text().strip()
-assert render_markdown('# Installed').title == 'Installed'
-print('Installed package, resources and renderer verified outside the checkout.')
-"""
-    environment = {key: value for key, value in os.environ.items() if key != "PYTHONPATH"}
-    subprocess.run([python, "-I", "-c", probe], cwd=check, env=environment, check=True)
-    subprocess.run([str(check / "env/bin/folio"), "--version"],
-                   cwd=check, env=environment, check=True)
-PY
+.venv/bin/python scripts/verify_package.py --gui
 ```
 
-This is a headless package check, not proof of a native launch. For native changes,
-also open a sample with the installed launcher on a display before removing that
-environment, using temporary absolute `XDG_CONFIG_HOME` and `XDG_CACHE_HOME` paths.
-Test `scripts/install_local.py` with `--prefix` pointing to a temporary directory;
-check the generated launcher from another working directory and exercise uninstall.
+Omit `--gui` for headless package verification. `scripts/smoke_gui.py` normally tests
+the checkout; `--installed` deliberately tests the installed distribution and rejects
+an editable/source import. Test `scripts/install_local.py` only with a disposable
+`--prefix`. The consumer Flatpak has a separate [build and verification recipe](docs/DISTRIBUTION.md).
 
 Built by the requested team roles: two coders, two testers, two PMs, a Steve Jobs-inspired product perspective, and a Linus Torvalds-inspired architecture perspective. These are assigned agent roles, not endorsements by those people.
 
-MIT licensed. This is an initial 0.1 release; distribution packages and Flatpak are future work.
+MIT licensed. This is the initial 0.1 release.

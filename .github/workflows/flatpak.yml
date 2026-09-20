@@ -1,0 +1,58 @@
+name: Flatpak
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-50
+      options: --privileged
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Read version
+        id: version
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import os, tomllib
+          version = tomllib.load(open('pyproject.toml', 'rb'))['project']['version']
+          ref = os.environ['GITHUB_REF']
+          if ref.startswith('refs/tags/'):
+              assert ref == f'refs/tags/v{version}', (ref, version)
+          print(f'bundle=folio-{version}-x86_64.flatpak')
+          PY
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@79327416609af08178ad73b352877e51450790b3 # v6
+        with:
+          manifest-path: packaging/flatpak/io.github.romitdasgupta.mdreader.json
+          bundle: ${{ steps.version.outputs.bundle }}
+          repository-url: https://dl.flathub.org/repo/flathub.flatpakrepo
+          upload-artifact: false
+          build-dir: artifacts/flatpak-build
+          repo-dir: artifacts/flatpak-repo
+          state-dir: artifacts/flatpak-state
+      - name: Verify installed application on GNOME Platform
+        env:
+          BUNDLE: ${{ steps.version.outputs.bundle }}
+        run: |
+          flatpak install --user --noninteractive -y "./$BUNDLE"
+          xvfb-run -a dbus-run-session -- flatpak run --env=GDK_BACKEND=x11 \
+            --command=python3 io.github.romitdasgupta.mdreader -I \
+            "$GITHUB_WORKSPACE/scripts/smoke_gui.py" --installed \
+            --artifacts /var/data/verification
+          sha256sum "$BUNDLE" > "$BUNDLE.sha256"
+      - name: Upload tested bundle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: folio-flatpak-x86_64
+          path: |
+            ${{ steps.version.outputs.bundle }}
+            ${{ steps.version.outputs.bundle }}.sha256
+          if-no-files-found: error

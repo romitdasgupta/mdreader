@@ -1,0 +1,70 @@
+{
+    "app-id": "io.github.romitdasgupta.mdreader",
+    "runtime": "org.gnome.Platform",
+    "runtime-version": "50",
+    "sdk": "org.gnome.Sdk",
+    "command": "folio",
+    "finish-args": [
+        "--share=ipc",
+        "--socket=fallback-x11",
+        "--socket=wayland",
+        "--device=dri",
+        "--filesystem=host:ro"
+    ],
+    "modules": [
+        {
+            "name": "python-build-backend",
+            "buildsystem": "simple",
+            "build-commands": [
+                "pip3 install --no-index --no-deps --ignore-installed --prefix=/app setuptools-80.9.0-py3-none-any.whl"
+            ],
+            "cleanup": ["*"],
+            "sources": [
+                {
+                    "type": "file",
+                    "url": "https://files.pythonhosted.org/packages/a3/dc/17031897dae0efacfea57dfd3a82fdd2a2aeb58e0ff71b77b87e44edc772/setuptools-80.9.0-py3-none-any.whl",
+                    "sha256": "062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922"
+                }
+            ]
+        },
+        {
+            "name": "python-markdown",
+            "buildsystem": "simple",
+            "build-commands": [
+                "pip3 install --no-index --no-deps --ignore-installed --prefix=/app mdurl-0.1.2-py3-none-any.whl markdown_it_py-4.0.0-py3-none-any.whl",
+                "install -Dm644 /app/lib/python*/site-packages/mdurl-*.dist-info/LICENSE -t /app/share/licenses/io.github.romitdasgupta.mdreader/mdurl",
+                "install -Dm644 /app/lib/python*/site-packages/markdown_it_py-*.dist-info/licenses/LICENSE -t /app/share/licenses/io.github.romitdasgupta.mdreader/markdown-it-py"
+            ],
+            "sources": [
+                {
+                    "type": "file",
+                    "url": "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl",
+                    "sha256": "84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8"
+                },
+                {
+                    "type": "file",
+                    "url": "https://files.pythonhosted.org/packages/94/54/e7d793b573f298e1c9013b8c4dade17d481164aa517d1d7148619c2cedbf/markdown_it_py-4.0.0-py3-none-any.whl",
+                    "sha256": "87327c59b172c5011896038353a81343b6754500a08cd7a4973bb48c6d578147"
+                }
+            ]
+        },
+        {
+            "name": "folio",
+            "buildsystem": "simple",
+            "build-commands": [
+                "pip3 install --no-index --no-deps --ignore-installed --no-build-isolation --prefix=/app .",
+                "install -Dm644 data/io.github.romitdasgupta.mdreader.desktop /app/share/applications/io.github.romitdasgupta.mdreader.desktop",
+                "install -Dm644 data/icons/io.github.romitdasgupta.mdreader.svg /app/share/icons/hicolor/scalable/apps/io.github.romitdasgupta.mdreader.svg",
+                "install -Dm644 data/io.github.romitdasgupta.mdreader.metainfo.xml /app/share/metainfo/io.github.romitdasgupta.mdreader.metainfo.xml",
+                "install -Dm644 LICENSE /app/share/licenses/io.github.romitdasgupta.mdreader/folio/LICENSE"
+            ],
+            "sources": [
+                {
+                    "type": "dir",
+                    "path": "../..",
+                    "skip": [".git", ".venv", ".flatpak-builder", "artifacts", "build", "dist", ".pytest_cache", "*.egg-info", "__pycache__"]
+                }
+            ]
+        }
+    ]
+}

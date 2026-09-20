@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import faulthandler
 import hashlib
 import json
 import os
@@ -22,18 +23,38 @@ import traceback
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--artifacts", type=Path, default=ROOT / "artifacts")
+    parser.add_argument(
+        "--installed", action="store_true",
+        help="exercise the installed distribution without importing the source checkout",
+    )
     args = parser.parse_args()
+    if not args.installed:
+        sys.path.insert(0, str(ROOT))
+    import folio
+
+    package_path = Path(folio.__file__).resolve()
+    if args.installed:
+        from importlib.metadata import distribution
+
+        installed = distribution("folio-reader")
+        packaged_files = {str(path) for path in installed.files or ()}
+        expected = Path(installed.locate_file("folio/__init__.py")).resolve()
+        if (
+            "folio/__init__.py" not in packaged_files
+            or package_path != expected
+            or package_path == ROOT / "folio/__init__.py"
+        ):
+            print(f"FAIL: --installed requires a non-editable installation; imported {package_path}")
+            return 1
+        print(f"Testing installed Folio: {package_path}")
     # X11 permits window screenshots without a desktop screenshot portal.
     if os.environ.get("DISPLAY"):
         os.environ.setdefault("GDK_BACKEND", "x11")
-    # Exercise GTK's native chooser fallback, which is introspectable in a test.
-    os.environ["GTK_USE_PORTAL"] = "0"
     try:
         import gi
 
@@ -195,6 +216,7 @@ def main() -> int:
                     if not dialogs:
                         if time.monotonic() >= deadline:
                             observed.append("No introspectable GTK file chooser appeared")
+                            print(f"FAIL: {observed[-1]}", file=sys.stderr, flush=True)
                             return GLib.SOURCE_REMOVE
                         return GLib.SOURCE_CONTINUE
                     dialog = dialogs[0]
@@ -212,7 +234,14 @@ def main() -> int:
                     return GLib.SOURCE_REMOVE
 
                 GLib.timeout_add(20, answer)
-                key(Gdk.KEY_o, Gdk.ModifierType.CONTROL_MASK)
+                # A portal or unresponsive dialog can leave key dispatch blocked
+                # inside a nested native loop. GI catches callback exceptions, so
+                # an independent watchdog must turn that hang into a failing exit.
+                faulthandler.dump_traceback_later(12, exit=True)
+                try:
+                    key(Gdk.KEY_o, Gdk.ModifierType.CONTROL_MASK)
+                finally:
+                    faulthandler.cancel_dump_traceback_later()
                 assert observed == [True], observed
 
             def passed(description):
@@ -262,6 +291,13 @@ def main() -> int:
             )
             checksums = {path: hashlib.sha256(path.read_bytes()).hexdigest() for path in (sample, sibling, image_path)}
             loaded(lambda: chooser(Gtk.ResponseType.ACCEPT, sample), "native chooser open")
+            # Opening through the actual chooser must retain the source directory:
+            # a portal-exported single file can hide its sibling images and links.
+            assert window.document.path == sample, window.document.path
+            wait_for(
+                lambda: js("document.querySelector('img')?.naturalWidth > 0"),
+                "chooser-selected document's sibling image",
+            )
             measurements["sample_load_seconds"] = loaded(lambda: window.open_document(sample), "sample render")
             assert window.document.path == sample
             assert "Reading café.md" in window.get_title()
@@ -439,13 +475,15 @@ def main() -> int:
             report = {
                 "status": "passed", "platform": platform.platform(),
                 "python": platform.python_version(),
+                "package_path": str(package_path),
+                "package_mode": "installed" if args.installed else "source",
                 "gtk": f"{Gtk.get_major_version()}.{Gtk.get_minor_version()}.{Gtk.get_micro_version()}",
                 "webkit": f"{WebKit2.get_major_version()}.{WebKit2.get_minor_version()}.{WebKit2.get_micro_version()}",
                 "display": Gdk.Display.get_default().get_name(),
                 "checks": checks, "measurements": measurements, "screenshots": screenshots,
                 "limitations": [
                     "GDK key events traverse GTK accelerator handling; physical hardware input is not automated.",
-                    "Native chooser fallback is exercised with GTK_USE_PORTAL=0; portal chooser and external browser launch require manual verification.",
+                    "The application's GTK file chooser is exercised; external browser launch requires manual verification.",
                     "Unreadable file mode depends on user privileges and is covered separately in core tests.",
                 ],
             }
