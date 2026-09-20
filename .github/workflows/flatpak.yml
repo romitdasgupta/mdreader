@@ -23,9 +23,12 @@ jobs:
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             flatpak flatpak-builder python3 ca-certificates dbus-x11 \
-            dbus-system-bus-common xvfb xauth fonts-dejavu-core \
+            dbus-system-bus-common xdg-desktop-portal xdg-desktop-portal-gtk \
+            xvfb xauth fonts-dejavu-core \
             appstream desktop-file-utils
           mkdir -p /run/dbus
+          dbus-uuidgen --ensure=/etc/machine-id
+          dbus-uuidgen --ensure
           dbus-daemon --system --fork
           flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
       - name: Read version
